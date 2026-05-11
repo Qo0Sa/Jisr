@@ -1,0 +1,57 @@
+//
+//  modelDatabase.swift
+//  Jisr
+//
+//  Created by Sarah on 24/11/1447 AH.
+//
+
+import SwiftData
+import Foundation
+
+@Model
+class User {
+    var name: String
+    var profileImage: Data?
+    
+    init(name: String, profileImage: Data? = nil) {
+        self.name = name
+        self.profileImage = profileImage
+    }
+}
+
+
+@Model
+class Room {
+    var name: String
+    var code: String
+    var category: String
+    var location: String
+    var maxPhotos: Int
+    var isClosed: Bool
+    var createdBy: User?
+    
+    init(name: String, code: String, category: String, location: String, maxPhotos: Int) {
+        self.name = name
+        self.code = code
+        self.category = category
+        self.location = location
+        self.maxPhotos = maxPhotos
+        self.isClosed = false
+    }
+}
+
+
+@Model
+class Photo {
+    var url: String
+    var uploadedAt: Date
+    var room: Room?
+    var user: User?
+    
+    init(url: String, room: Room, user: User) {
+        self.url = url
+        self.uploadedAt = Date()
+        self.room = room
+        self.user = user
+    }
+}

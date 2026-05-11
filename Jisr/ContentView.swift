@@ -6,19 +6,20 @@
 //
 
 import SwiftUI
+import SwiftData
 
 struct ContentView: View {
     var body: some View {
-        VStack {
-            Image(systemName: "globe")
-                .imageScale(.large)
-                .foregroundStyle(.tint)
-            Text("Hello, world!")
-        }
-        .padding()
+        NameView()
     }
 }
 
 #Preview {
     ContentView()
+        .modelContainer(for: [User.self, Room.self, Photo.self], inMemory: true)
 }
+
+//#Preview {
+//    ContentView()
+//        .modelContainer(for: User.self, inMemory: true)
+//}

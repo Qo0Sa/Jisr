@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import SwiftData
 
 @main
 struct JisrApp: App {
@@ -13,5 +14,7 @@ struct JisrApp: App {
         WindowGroup {
             ContentView()
         }
+        .modelContainer(for: [User.self, Room.self, Photo.self])
     }
 }
+
