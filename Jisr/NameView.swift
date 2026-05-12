@@ -10,66 +10,124 @@ import SwiftData
 import PhotosUI
 
 struct NameView: View {
+    
     @Environment(\.modelContext) private var context
+    
     @State private var viewModel = UserViewModel()
     @State private var goToMain = false
+    @State private var showError = false
     
     var body: some View {
+        
         NavigationStack {
+            
             VStack(spacing: 24) {
-                Spacer()
-                    .frame(height: 60) // ← غير الرقم حسب ما تبين
                 
-                // صورة البروفايل
+                Spacer().frame(height: 60)
+                
+                // MARK: - Profile Image
                 PhotosPicker(selection: $viewModel.selectedPhoto, matching: .images) {
-                    if let image = viewModel.profileImage {
-                        image
-                            .resizable()
-                            .scaledToFill()
-                            .frame(width: 90, height: 90)
-                            .clipShape(Circle())
-                    } else {
+                    
+                    ZStack {
+                        
                         Circle()
-                            .fill(Color.gray.opacity(0.2))
-                            .frame(width: 90, height: 90)
+                            .fill(Color.black.opacity(0.08))
+                            .frame(width: 188, height: 188)
+                        
+                        if let image = viewModel.profileImage {
+                            
+                            image
+                                .resizable()
+                                .scaledToFill()
+                                .frame(width: 188, height: 188)
+                                .clipShape(Circle())
+                            
+                        } else {
+                            
+                            if viewModel.name.isEmpty {
+                                
+                                Image(systemName: "person.fill")
+                                    .font(.system(size: 60))
+                                    .foregroundColor(.black.opacity(0.3))
+                                
+                            } else {
+                                
+                                Text(String(viewModel.name.prefix(1)).uppercased())
+                                    .font(.system(size: 70, weight: .bold))
+                                    .foregroundColor(.black.opacity(0.6))
+                            }
+                        }
+                        
+                        Circle()
+                            .fill(Color.black)
+                            .frame(width: 42, height: 42)
                             .overlay {
                                 Image(systemName: "plus")
-                                    .foregroundStyle(.gray)
+                                    .foregroundColor(.white)
                             }
+                            .offset(x: 60, y: 60)
                     }
                 }
                 .onChange(of: viewModel.selectedPhoto) {
                     Task { await viewModel.loadImage() }
                 }
                 
-                // حقل الاسم
-                TextField("write your name", text: $viewModel.name)
-                    .multilineTextAlignment(.center)
-                    .padding()
-                    .background(Color.field)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
-                    .padding(.horizontal, 40)
-                
-                // زر Next
-                Button("next") {
-                    viewModel.saveUser(context: context)
-                    goToMain = true
+                // MARK: - Name Field
+                VStack(alignment: .leading, spacing: 8) {
+                    
+                    Text("Write your name")
+                        .font(.UbuntuBold(size: 20))
+                        .foregroundColor(.button)
+                    
+                    TextField("Ex.Sarah", text: $viewModel.name)
+                        .padding()
+                        .background(Color.field)
+                        .clipShape(RoundedRectangle(cornerRadius: 16))
+                    
+                    if showError && viewModel.name.isEmpty {
+                        
+                        Text("Please enter your name")
+                            .font(.caption)
+                            .foregroundColor(.red)
+                            .padding(.leading, 4)
+                    }
                 }
-                .disabled(!viewModel.isValid)
-                .padding(.horizontal, 40)
-                .padding(.vertical, 12)
-                .frame(maxWidth: .infinity)
-                .background(viewModel.isValid ? Color.button : Color.gray)
-                .foregroundStyle(.white)
-                .clipShape(RoundedRectangle(cornerRadius: 12))
-                .padding(.horizontal, 40)
+                .padding(.horizontal, 35)
+                
+                Spacer()
+                
+                // MARK: - Button
+                Button {
+                    
+                    if viewModel.name.isEmpty {
+                        showError = true
+                    } else {
+                        showError = false
+                        
+                        viewModel.saveUser(context: context)
+                        goToMain = true
+                    }
+                    
+                } label: {
+                    
+                    Text("Next")
+                        .font(.UbuntuBold(size: 20))
+                        .foregroundColor(.white)
+                        .frame(width: 209, height: 64)
+                        .background(Color.black)
+                        .clipShape(RoundedRectangle(cornerRadius: 99))
+                }
                 
                 Spacer()
             }
-            .background(Color.backgroundcolor) 
+            .background(Color.backgroundcolor)
             .navigationDestination(isPresented: $goToMain) {
                 MainView()
             }
         }
     }
+}
+#Preview {
+    ContentView()
+        .modelContainer(for: User.self, inMemory: true)
 }

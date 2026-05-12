@@ -19,7 +19,7 @@ struct ContentView: View {
         .modelContainer(for: [User.self, Room.self, Photo.self], inMemory: true)
 }
 
-//#Preview {
-//    ContentView()
-//        .modelContainer(for: User.self, inMemory: true)
-//}
+#Preview {
+    ContentView()
+        .modelContainer(for: User.self, inMemory: true)
+}
