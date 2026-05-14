@@ -10,8 +10,14 @@ import Foundation
 
 @Model
 class User {
-    var name: String
-    var profileImage: Data?
+    var name: String = ""
+    var profileImage: Data? = nil
+    
+    @Relationship(deleteRule: .cascade, inverse: \Room.createdBy)
+    var rooms: [Room]? = []
+    
+    @Relationship(deleteRule: .cascade, inverse: \Photo.user)
+    var photos: [Photo]? = []
     
     init(name: String, profileImage: Data? = nil) {
         self.name = name
@@ -19,16 +25,18 @@ class User {
     }
 }
 
-
 @Model
 class Room {
-    var name: String
-    var code: String
-    var category: String
-    var location: String
-    var maxPhotos: Int
-    var isClosed: Bool
-    var createdBy: User?
+    var name: String = ""
+    var code: String = ""
+    var category: String = ""
+    var location: String = ""
+    var maxPhotos: Int = 0
+    var isClosed: Bool = false
+    var createdBy: User? = nil
+    
+    @Relationship(deleteRule: .cascade, inverse: \Photo.room)
+    var photos: [Photo]? = []
     
     init(name: String, code: String, category: String, location: String, maxPhotos: Int) {
         self.name = name
@@ -40,13 +48,12 @@ class Room {
     }
 }
 
-
 @Model
 class Photo {
-    var url: String
-    var uploadedAt: Date
-    var room: Room?
-    var user: User?
+    var url: String = ""
+    var uploadedAt: Date = Date()
+    var room: Room? = nil
+    var user: User? = nil
     
     init(url: String, room: Room, user: User) {
         self.url = url

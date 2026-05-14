@@ -29,8 +29,14 @@ class UserViewModel {
         }
     }
     
+//    func saveUser(context: ModelContext) {
+//        let user = User(name: name, profileImage: profileImageData)
+//        context.insert(user)
+//    }
     func saveUser(context: ModelContext) {
         let user = User(name: name, profileImage: profileImageData)
         context.insert(user)
+        print("✅ User saved: \(user.name)")
+        print("✅ Image: \(profileImageData != nil ? "موجودة" : "ما فيها صورة")")
     }
 }

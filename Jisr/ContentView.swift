@@ -14,10 +14,10 @@ struct ContentView: View {
     }
 }
 
-#Preview {
-    ContentView()
-        .modelContainer(for: [User.self, Room.self, Photo.self], inMemory: true)
-}
+//#Preview {
+//    ContentView()
+//        .modelContainer(for: [User.self, Room.self, Photo.self], inMemory: true)
+//}
 
 #Preview {
     ContentView()

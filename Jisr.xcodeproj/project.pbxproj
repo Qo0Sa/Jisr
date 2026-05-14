@@ -6,12 +6,21 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		369F35F92FB344A70058602D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 369F35F12FB344A70058602D /* Assets.xcassets */; };
+		369F36022FB34E170058602D /* Ubuntu-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 369F36012FB34E170058602D /* Ubuntu-Regular.ttf */; };
+		369F36032FB34E170058602D /* Ubuntu-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 369F36002FB34E170058602D /* Ubuntu-Bold.ttf */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
+		369F35F12FB344A70058602D /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		369F36002FB34E170058602D /* Ubuntu-Bold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Ubuntu-Bold.ttf"; sourceTree = "<group>"; };
+		369F36012FB34E170058602D /* Ubuntu-Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Ubuntu-Regular.ttf"; sourceTree = "<group>"; };
 		36E91F192FB0A736004B0FBA /* Jisr.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Jisr.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		369F36052FB34EA20058602D /* Exceptions for "Jisr" folder in "Jisr" target */ = {
+		369F36142FB374A80058602D /* Exceptions for "Jisr" folder in "Jisr" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
@@ -24,7 +33,7 @@
 		36E91F1B2FB0A736004B0FBA /* Jisr */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
-				369F36052FB34EA20058602D /* Exceptions for "Jisr" folder in "Jisr" target */,
+				369F36142FB374A80058602D /* Exceptions for "Jisr" folder in "Jisr" target */,
 			);
 			path = Jisr;
 			sourceTree = "<group>";
@@ -45,8 +54,11 @@
 		36E91F102FB0A735004B0FBA = {
 			isa = PBXGroup;
 			children = (
-				36E91F1B2FB0A736004B0FBA /* Jisr */,
+				369F35F12FB344A70058602D /* Assets.xcassets */,
+				369F36002FB34E170058602D /* Ubuntu-Bold.ttf */,
+				369F36012FB34E170058602D /* Ubuntu-Regular.ttf */,
 				36E91F1A2FB0A736004B0FBA /* Products */,
+				36E91F1B2FB0A736004B0FBA /* Jisr */,
 			);
 			sourceTree = "<group>";
 		};
@@ -122,6 +134,9 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				369F36022FB34E170058602D /* Ubuntu-Regular.ttf in Resources */,
+				369F36032FB34E170058602D /* Ubuntu-Bold.ttf in Resources */,
+				369F35F92FB344A70058602D /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
