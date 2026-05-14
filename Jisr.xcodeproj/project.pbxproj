@@ -38,6 +38,11 @@
 			path = Jisr;
 			sourceTree = "<group>";
 		};
+		FE47AAFB2FB3505200B76F2D /* waitting room  */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = "waitting room ";
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -87,6 +92,7 @@
 			);
 			fileSystemSynchronizedGroups = (
 				36E91F1B2FB0A736004B0FBA /* Jisr */,
+				FE47AAFB2FB3505200B76F2D /* waitting room  */,
 			);
 			name = Jisr;
 			packageProductDependencies = (
