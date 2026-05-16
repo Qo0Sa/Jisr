@@ -3,261 +3,212 @@
 //  Jisr
 //
 //  Created by Wed Ahmed Alasiri on 12/05/2026.
-//
+// in ai  لازم احط خانه للاسم المشن و دسكربشن عنها لازم
 
 import SwiftUI
 
 struct WaitingRoomView: View {
-
     var body: some View {
-
-        ZStack {
-
-            Image("yellowbg") // اسم الصورة في Assets
+        ZStack(alignment: .bottom) { // جعل العناصر تترتب فوق بعضها
+            
+            // 1. الخلفية الثابتة
+            Image("yellowbg")
                 .resizable()
                 .scaledToFill()
                 .ignoresSafeArea()
-
-            VStack(spacing: 0) {
-
-                // MARK: Header
+            
+            // 2. المحتوى الأساسي
+            VStack {
                 
+                
+                // MARK: Header & Mission & Code (العناصر الثابتة في الأعلى)
+                VStack {
+                    
+                    // الهيدر
                     HStack {
-                        Button(action: {
-
-                        }) {
-                        Image(systemName: "chevron.left")
-                            .font(.system(size: 28, weight: .medium))
-                            .foregroundColor(.black.opacity(0.85))
-                    }
-                    
-                    
-                    Spacer()
-
-                    Text("Room Name")
-                        .font(.system(size: 24, weight: .bold))
-                        .foregroundColor(.black.opacity(0.85))
-
-                    Spacer()
-
-                    Color.clear
-                        .frame(width: 28)
-                }
-                .padding(.horizontal, 28)
-                .padding(.top, 65)
-
-                // MARK: Mission Card
-
-                VStack(alignment: .leading, spacing: 14) {
-
-                    HStack(alignment: .top) {
-
-                        Text("Mission District Mural Hunt")
-                            .font(.system(size: 20, weight: .medium))
-                            .foregroundColor(.black.opacity(0.75))
-
-                        Spacer()
-                        Button(action: {
-
-                        }) {
-                            Image(systemName: "arrow.trianglehead.2.clockwise")
-                                .font(.system(size: 20))
-                                .foregroundColor(.black.opacity(0.75))
+                        Button(action: {}) {
+                            Image(systemName: "chevron.left")
+                                .font(.system(size: 24, weight: .bold))
+                                .foregroundColor(.black)
                         }
+                        Spacer()
+                        Text("Room Name")
+                            .font(.system(size: 22, weight: .bold))
+                        Spacer()
+                        Color.clear.frame(width: 24)
                     }
-
-                    Text("Go to Mission District and each photograph the mural that moved you the most")
-                        .font(.system(size: 14))
-                        .foregroundColor(.black.opacity(0.7))
-                        .padding(16)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .background(Color(red: 233/255, green: 227/255, blue: 214/255))
-                        .cornerRadius(18)
-
-                }
-                .padding(16)
-                .background(Color(red: 244/255, green: 242/255, blue: 237/255))
-                .cornerRadius(24)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 24)
-                        .stroke(Color.black.opacity(0.7), lineWidth: 1)
-                )
-                .shadow(color: .black.opacity(0.4), radius: 0, x: 0, y: 3)
-                .padding(.horizontal, 20)
-//                .padding(.top, 22)
-                .offset(y: -95)
-
-                // MARK: Room Code
-
-                HStack {
-
-                    HStack(spacing: 6) {
-
-                        Image(systemName: "person.fill")
-
-                        Text("5")
-                            .font(.system(size: 18, weight: .medium))
-                    }
-                    .offset(y: -100)
-
-                    Spacer()
-
-                    HStack(spacing: 14) {
+                    //                    .padding(.top, 10)
+                    .offset(y:-30)
+                    
+                    // بطاقة المهمة
+                    VStack(alignment: .leading, spacing: 12) {
                         
-                        HStack{
+                        HStack(alignment: .top) {
+
+                              Text("Mission District Mural Hunt")
+                                 .font(.system(size: 20, weight: .medium))
+                                 .foregroundColor(.black.opacity(0.75))
+
+                            Spacer()
+                                Button(action: {
+
+                                    }) {
+                                        Image(systemName: "arrow.trianglehead.2.clockwise")
+                                            .font(.system(size: 20))
+                                            .foregroundColor(.black.opacity(0.75))
+                                        }
+                                    }
+
+                                    Text("Go to Mission District and each photograph the mural that moved you the most")
+                                        .font(.system(size: 14))
+                                        .foregroundColor(.black.opacity(0.7))
+                                        .padding(16)
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                        .background(Color(red: 233/255, green: 227/255, blue: 214/255))
+                                        .cornerRadius(18)
+
+                                }
+                                .padding(16)
+                                .background(Color(red: 244/255, green: 242/255, blue: 237/255))
+                                .cornerRadius(24)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 24)
+                                        .stroke(Color.black.opacity(0.7), lineWidth: 1)
+                                )
+                                .shadow(color: .black.opacity(0.4), radius: 0, x: 0, y: 3)
+                                .padding(.horizontal, -10)
+                     //         .padding(.top, 22)
+                                .offset(y: -120)
+                    
+                    // زر النسخ (نهاية العناصر الثابتة)
+                    HStack {
+                        Label("5", systemImage: "person.fill")
+//                        Spacer()
+//                            .offset(x:-10)
+                        
+                        HStack {
                             Text("ABC123")
-                                .font(.system(size: 20, weight: .medium))
-                                .foregroundColor(.gray.opacity(0.8))
-                                .frame(width: 130, height: 38)
-                                .cornerRadius(28)
+//                                .offset(x:15)
+                                .foregroundColor(.gray)
                             
                             Button(action: {
-                                
+
                             }) {
-                                Image(systemName: "document.on.document.fill")
-                                    .font(.system(size: 22))
-                                    .offset(x:-49)
-                                    .foregroundColor(.gray.opacity(0.8))
-                                    .offset(x : 35)
+                                Image(systemName: "document.on.document")
+//                                    .offset(x:40)
+                                    .foregroundColor(.gray)
                             }
                         }
-                        .background(Color.white.opacity(0.75))
-                        .cornerRadius(28)
-                        .frame(width: 150, height: 28)
-                        .offset(x : -50)
-                        
-                        
-                        
-                        
-               
+                        .padding(.horizontal, 55)
+                        .padding(.vertical, 8)
+                        .background(Color.white.opacity(0.9))
+                        .cornerRadius(20)
                         
                         
                         Button(action: {
-                            
+
                         }) {
                             Image(systemName: "square.and.arrow.up")
-                                .font(.system(size: 24))
-                                .foregroundColor(.black)
+                                .padding(8)
+                                .foregroundColor(.black)   
 
+                            //                            .offset(x:0)
                         }
                     }
-                    .offset(y: -100)
+                    .offset(y:-100)
+                    
                 }
-                .padding(.horizontal, 42)
-                .padding(.top, 26)
-
-                // MARK: Users
-
+                .padding(.horizontal, 25)
+                
+                
+                // MARK: ScrollView (تبدأ من هنا وتأخذ باقي الشاشة)
                 ScrollView(showsIndicators: false) {
-//here will be the foreach loop later
-                    VStack(spacing: 28) {
-
-                        UserCard(name: "ahmed", image: "person1")
-
+                    VStack(spacing: 15) {
+                        // قائمة المستخدمين
+                        UserCard(name: "ess", image: "person1")
                         UserCard(name: "ayad.200", image: "person1")
-
                         UserCard(name: "charlie alixander", image: "person1")
-
                         UserCard(name: "lionnn.15", image: "person1")
-
                         UserCard(name: "wiliam better.2", image: "person1")
+                        UserCard(name: "New Player 1", image: "person1")
+                        UserCard(name: "New Player 2", image: "person1")
+                        
+                        // مساحة إضافية في نهاية السكرول عشان آخر اسم ما يغطي عليه زر الـ Start
+                        Color.clear.frame(height: 30)
                     }
-                    .padding(.top, 30)
-                    .padding(.horizontal, 34)
-                    .padding(.bottom, 10)
+//                    .padding(.top, 20)
+                    .padding(.horizontal)
+                    .padding(.vertical,40)
+
                 }
-//                .frame(maxWidth: 400)
-                .frame(maxHeight: 920) // هنا تتحكمين لنهاية السكروول
-                .offset(y: -100)
-                .padding(.top, 26)
-
-
-
-//                Spacer()
-
+                .frame(maxHeight: .infinity)
+                .offset(y:-90)
                 
             }
-            .offset(y:-130)
             
-            
-            VStack{
-                ZStack {
-                // Glow effect
-                Circle()
-                    .fill(
-                        RadialGradient(
-                            gradient: Gradient(colors: [
-                                Color.yellow.opacity(0.95),
-                                Color.yellow.opacity(0.45),
-                                Color.clear
-                            ]),
-                            center: .center,
-                            startRadius: 10,
-                            endRadius: 180
-                        )
-                    )
-                    .frame(width: 340, height: 340)
-                    .blur(radius: 35)
-                    .offset(y: -10)
-                
-                
-                Button(action: {
+            // 3. زر Start الثابت (في طبقة أعلى ZStack)
+            VStack {
+                ZStack(alignment: .bottom) {
                     
-                }) {
+                    // 1. الصورة اللي تبيها تكون خلفية للزر
+                    Image("back bg") // تأكد من اسم الصورة عندك
+                        .resizable()
+                        .scaledToFill()
+                        .frame(height: 160) // ارتفاع المنطقة اللي تغطي السكرول من تحت
+                        .clipped()
+//                    // القناع هو اللي يسوي حركة التلاشي (Fade)
+//                        .mask(
+//                            LinearGradient(
+//                                gradient: Gradient(colors: [.clear, .black]), // من شفاف إلى ظاهر
+//                                startPoint: .top,
+//                                endPoint: .bottom
+//                            )
+//                        )
+//                        .offset(y:-30)
                     
-                    Text("Start")
-                        .font(.system(size: 28, weight: .bold))
-                        .foregroundColor(.white)
-                        .frame(width: 210, height: 70)
-                        .background(Color(red: 43/255, green: 39/255, blue: 41/255))
-                        .cornerRadius(50)
+                    // 2. زر البدء
+                    Button(action: {
+                        print("Start Game")
+                    }) {
+                        Text("Start")
+                            .font(.system(size: 24, weight: .bold))
+                            .foregroundColor(.white)
+                            .frame(width: 220, height: 65)
+                            .background(Color(red: 0.15, green: 0.15, blue: 0.15))
+                            .cornerRadius(35)
+                            .shadow(color: .black.opacity(0.3), radius: 10, x: 0, y: 5)
+                    }
+                    .padding(.bottom, 40) // ارفعه شوي عن الحافة السفلية
                 }
-                .padding(.bottom, 40)
+                .ignoresSafeArea() // يخلي التدرج يوصل لآخر الشاشة
             }
-            }
-            .offset(y: 370)
         }
-        
+    }
+    
+    // كرت المستخدم (نفسه بدون تغيير)
+    struct UserCard: View {
+        let name: String
+        let image: String
+        var body: some View {
+            HStack(spacing: 15) {
+                Image(image)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: 60, height: 60)
+                    .clipShape(Circle())
+                
+                Text(name)
+                    .font(.system(size: 18, weight: .bold))
+                    .foregroundColor(.black.opacity(0.8))
+                Spacer()
+            }
+            .padding(.horizontal, 15)
+            .frame(height: 85)
+            .background(Color.white.opacity(0.6))
+            .cornerRadius(45)
+        }
     }
 }
-
-// MARK: - User Card
-
-struct UserCard: View {
-
-    let name: String
-    let image: String
-
-    var body: some View {
-
-        HStack(spacing: 20) {
-
-            
-
-            Image(image)
-                .resizable()
-                .scaledToFill()
-                .frame(width: 72, height: 72)
-                .clipShape(Circle())
-                .offset(x: -7)
-            
-            
-            Text(name)
-                .font(.system(size: 22, weight: .bold))
-                .foregroundColor(Color.black.opacity(0.78))
-                .lineLimit(1)
-
-            Spacer()
-        }
-        .padding(.horizontal, 18)
-        .frame(height: 90)
-        .background(Color.white.opacity(0.45))
-        .cornerRadius(65)
-    }
-}
-
-// MARK: - Preview
-
 #Preview {
     WaitingRoomView()
 }
