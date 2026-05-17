@@ -4,10 +4,24 @@
 //
 //  Created by Wed Ahmed Alasiri on 12/05/2026.
 // in ai  لازم احط خانه للاسم المشن و دسكربشن عنها لازم
+// add Dynamic type in accessibility
 
 import SwiftUI
 
 struct WaitingRoomView: View {
+    
+    @State private var copied = false
+    @State private var roomCode = WaitingRoomView.generateRoomCode()
+    static func generateRoomCode() -> String {
+
+        let letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+
+        return String((0..<6).map { _ in
+            letters.randomElement()!
+        })
+    }
+    
+    
     var body: some View {
         ZStack(alignment: .bottom) { // جعل العناصر تترتب فوق بعضها
             
@@ -87,16 +101,30 @@ struct WaitingRoomView: View {
 //                            .offset(x:-10)
                         
                         HStack {
-                            Text("ABC123")
-//                                .offset(x:15)
+
+                            Text(roomCode)
                                 .foregroundColor(.gray)
-                            
+
                             Button(action: {
 
+                                UIPasteboard.general.string = roomCode
+
+                                withAnimation {
+                                    copied = true
+                                }
+
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+
+                                    withAnimation {
+                                        copied = false
+                                    }
+                                }
+
                             }) {
-                                Image(systemName: "document.on.document")
-//                                    .offset(x:40)
-                                    .foregroundColor(.gray)
+
+                                Image(systemName: copied ? "checkmark" : "document.on.document")
+                                    .foregroundColor(copied ? .green : .gray)
+                                    .contentTransition(.symbolEffect(.replace))
                             }
                         }
                         .padding(.horizontal, 55)
@@ -105,14 +133,21 @@ struct WaitingRoomView: View {
                         .cornerRadius(20)
                         
                         
-                        Button(action: {
-
-                        }) {
+                        ShareLink(
+                            item: """
+                            Join my room in Jisr 
+                            
+                            Room Code: \(roomCode)
+                            
+                            Mission:
+                            Mission District Mural Hunt
+                            
+                            Go to Mission District and each photograph the mural that moved you the most
+                            """
+                        ) {
                             Image(systemName: "square.and.arrow.up")
                                 .padding(8)
-                                .foregroundColor(.black)   
-
-                            //                            .offset(x:0)
+                                .foregroundColor(.black)
                         }
                     }
                     .offset(y:-100)
@@ -141,7 +176,7 @@ struct WaitingRoomView: View {
                     .padding(.vertical,40)
 
                 }
-                .frame(maxHeight: .infinity)
+                .frame(maxWidth: .infinity, alignment: .center)
                 .offset(y:-90)
                 
             }
@@ -187,25 +222,32 @@ struct WaitingRoomView: View {
     
     // كرت المستخدم (نفسه بدون تغيير)
     struct UserCard: View {
+        
         let name: String
         let image: String
+
         var body: some View {
+
             HStack(spacing: 15) {
+
                 Image(image)
                     .resizable()
                     .scaledToFill()
                     .frame(width: 60, height: 60)
                     .clipShape(Circle())
-                
+
+                Spacer()
                 Text(name)
                     .font(.system(size: 18, weight: .bold))
                     .foregroundColor(.black.opacity(0.8))
-                Spacer()
+                    .padding(.trailing, 60) // ← يعطي مساحة بعد الاسم
+
             }
-            .padding(.horizontal, 15)
-            .frame(height: 85)
+            .padding(.horizontal, 18)
+            .padding(.vertical, 12)
             .background(Color.white.opacity(0.6))
             .cornerRadius(45)
+            .fixedSize() // ✨ هذا المهم
         }
     }
 }
