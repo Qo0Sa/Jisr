@@ -7,12 +7,7 @@
 //  Created by Wteen on 25/11/1447 AH.
 //
 
-//
-//  RoomSelectionSheet.swift
-//  Jisr
-//
-//  Created by Wteen on 25/11/1447 AH.
-//
+
 
 import SwiftUI
 import SwiftData
