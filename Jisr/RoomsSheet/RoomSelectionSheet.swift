@@ -19,6 +19,8 @@ struct RoomSelectionSheet: View {
     @State private var isOutdoor: Bool = true
     @State private var photoLimit: Int = 3
     
+    var onRoomCreated: () -> Void = {}
+    
     var body: some View {
         ZStack {
             Color.black.opacity(0.4)
@@ -158,6 +160,8 @@ struct RoomSelectionSheet: View {
             .padding(.horizontal, 24)
             .shadow(color: .black.opacity(0.15), radius: 20, x: 0, y: 10)
         }
+        
+        
     }
     
     private func createRoomAction() {
@@ -172,11 +176,13 @@ struct RoomSelectionSheet: View {
             category: selectedCategory,
             location: isOutdoor ? "Outdoor" : "Indoor",
             maxPhotos: photoLimit
+            
         )
         
         context.insert(newRoom)
         try? context.save()
         isPresented = false
+        onRoomCreated()
     }
 }
 

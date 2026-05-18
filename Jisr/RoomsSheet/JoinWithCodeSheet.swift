@@ -12,6 +12,8 @@ struct JoinWithCodeSheet: View {
     @State private var roomCode: String = ""
     @FocusState private var isTextFieldFocused: Bool
     
+    var onJoined: () -> Void = {}
+    
     var body: some View {
         ZStack {
             Color.black.opacity(0.4)
@@ -45,7 +47,10 @@ struct JoinWithCodeSheet: View {
                     .autocorrectionDisabled()
                     .focused($isTextFieldFocused)
                 
-                Button(action: { isPresented = false }) {
+                Button(action: {
+                    isPresented = false
+                    onJoined()
+                }) {
                     Text("Join")
                         .font(.UbuntuBold(size: 20))
                         .foregroundColor(.white)
