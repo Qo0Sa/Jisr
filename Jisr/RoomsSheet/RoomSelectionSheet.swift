@@ -7,6 +7,13 @@
 //  Created by Wteen on 25/11/1447 AH.
 //
 
+//
+//  RoomSelectionSheet.swift
+//  Jisr
+//
+//  Created by Wteen on 25/11/1447 AH.
+//
+
 import SwiftUI
 import SwiftData
 
@@ -45,32 +52,37 @@ struct RoomSelectionSheet: View {
                     .font(.Ubuntu(size: 16))
                     .padding()
                     .frame(height: 54)
-                    .background(Color("fieldColor")) // سحب من الـ Assets مباشرة
+                    .background(Color("fieldColor"))
                     .clipShape(RoundedRectangle(cornerRadius: 99))
                 
+                // MARK: - كروت التصنيفات المائلة المحدثة بالأيقونات المتعددة
                 HStack(spacing: -10) {
+                    
+                    // 1. كارد Cognitive (كتب، عقل، بزل)
                     CategoryCard(
                         title: "Cognitive",
-                        icon: "book.closed.fill",
-                        bgColor: Color("cognitiveColor"), // سحب من الـ Assets مباشرة
+                        icons: ["book.closed.fill", "brain.head.profile", "puzzlepiece.fill"],
+                        bgColor: Color("cognitiveColor"),
                         isSelected: selectedCategory == "Cognitive",
                         degree: -12
                     ) { selectedCategory = "Cognitive" }
                     
+                    // 2. كارد Physical (شخص يجري، كرة، ورقة شجر)
                     CategoryCard(
                         title: "Physical",
-                        icon: "figure.run",
-                        bgColor: Color("physicalColor"), // سحب من الـ Assets مباشرة
+                        icons: ["figure.run", "soccerball", "leaf.fill"],
+                        bgColor: Color("physicalColor"),
                         isSelected: selectedCategory == "Physical",
                         degree: 0
                     ) { selectedCategory = "Physical" }
                         .offset(y: -15)
                         .zIndex(selectedCategory == "Physical" ? 1 : 0)
                     
+                    // 3. كارد Creative (كاميرا، نوتة موسيقية، باليت ألوان)
                     CategoryCard(
                         title: "Creative",
-                        icon: "paintpalette.fill",
-                        bgColor: Color("creativeColor"), // سحب من الـ Assets مباشرة
+                        icons: ["camera.fill", "music.note", "paintpalette.fill"],
+                        bgColor: Color("creativeColor"),
                         isSelected: selectedCategory == "Creative",
                         degree: 12
                     ) { selectedCategory = "Creative" }
@@ -180,9 +192,10 @@ struct RoomSelectionSheet: View {
     }
 }
 
+// MARK: - الـ Component المصغر المطور لعرض عنقود الأيقونات الموزعة
 struct CategoryCard: View {
     let title: String
-    let icon: String
+    let icons: [String] // مصفوفة تستقبل 3 أسماء أيقونات
     let bgColor: Color
     let isSelected: Bool
     let degree: Double
@@ -191,19 +204,39 @@ struct CategoryCard: View {
     var body: some View {
         Button(action: action) {
             VStack(spacing: 8) {
+                
+                // 💡 الدائرة الكبيرة التي تحتوي على الأيقونات الثلاث الموزعة
                 ZStack {
                     Circle()
                         .fill(Color.white)
-                        .frame(width: 46, height: 46)
-                    Image(systemName: icon)
-                        .font(.system(size: 20))
-                        .foregroundColor(bgColor)
+                        .frame(width: 54, height: 54) // تم تكبير الدائرة قليلاً لتستوعب التوزيع براحة
+                    
+                    if icons.count >= 3 {
+                        // الأيقونة الأولى: أعلى اليسار قليلاً
+                        Image(systemName: icons[0])
+                            .font(.system(size: 12, weight: .bold))
+                            .foregroundColor(bgColor)
+                            .offset(x: -10, y: -10)
+                        
+                        // الأيقونة الثانية: أعلى اليمين قليلاً
+                        Image(systemName: icons[1])
+                            .font(.system(size: 13, weight: .bold))
+                            .foregroundColor(bgColor)
+                            .offset(x: 10, y: -8)
+                        
+                        // الأيقونة الثالثة: في المنتصف أسفل قليلاً (تكون الأكبر حجماً كمركز بصري)
+                        Image(systemName: icons[2])
+                            .font(.system(size: 16, weight: .bold))
+                            .foregroundColor(bgColor)
+                            .offset(x: 0, y: 8)
+                    }
                 }
+                
                 Text(title)
                     .font(.UbuntuBold(size: 14))
                     .foregroundColor(.white)
             }
-            .frame(width: 102, height: 124)
+            .frame(width: 106, height: 128)
             .background(bgColor)
             .clipShape(RoundedRectangle(cornerRadius: 20))
             .rotationEffect(.degrees(degree))
