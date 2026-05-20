@@ -14,6 +14,7 @@ import SwiftData
 enum WaitingDestination: Hashable {
     case host
     case guest
+    case profile
 }
 
 struct MainView: View {
@@ -44,13 +45,20 @@ struct MainView: View {
                   
                     HStack {
                                      
-                                     // اليسار
-                                     ProfileAvatarView(
-                                         image: viewModel.profileImage,
-                                         name: viewModel.userName
-                                     )
-                                     
-                                     Spacer()
+                        // MARK: - 💡 اليسار: تم تحويل البروفايل لزر تفاعلي يقود لصفحة البروفايل بالملي
+                                                Button {
+                                                    withAnimation(.easeInOut(duration: 0.2)) {
+                                                        waitingDestination = .profile
+                                                    }
+                                                } label: {
+                                                    ProfileAvatarView(
+                                                        image: viewModel.profileImage,
+                                                        name: viewModel.userName
+                                                    )
+                                                }
+                                                .buttonStyle(PlainButtonStyle()) // للحفاظ على الهوية البصرية للأفاتار بدون تلوين أزرق
+                                                             
+                                                Spacer()
                                      
                                      // اليمين
                                      Button {
@@ -114,6 +122,8 @@ struct MainView: View {
                                WaitingRoomView()
                            case .guest:
                                WaitingRoomForNotHostView()
+                           case .profile:
+                                               ProfileView()
                            }
                        }
                        .onAppear {
