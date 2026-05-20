@@ -12,7 +12,7 @@ import SwiftData
 struct JisrApp: App {
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            SplashView()
         }
         .modelContainer(for: [User.self, Room.self, Photo.self])
     }
