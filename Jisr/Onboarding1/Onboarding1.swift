@@ -102,14 +102,12 @@ struct OnboardingView: View {
                                 
                                 Spacer()
                                 
-                                Button(action: {
-                                    // action
-                                }) {
-                                    Image(systemName: "arrow.right")
-                                        .foregroundColor(.white)
-                                        .padding(12)
-                                        .background(Circle().fill(Color.button))
-                                }
+                                 NavigationLink(destination: Onboarding2View()) {
+                                     Image(systemName: "arrow.right")
+                                         .foregroundColor(.white)
+                                         .padding(12)
+                                         .background(Circle().fill(Color.button))
+                                 }
                             }
                             .padding(.top, 35)
                         }

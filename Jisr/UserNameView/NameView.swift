@@ -120,6 +120,7 @@ struct NameView: View {
                 
                 Spacer()
             }
+            .navigationBarBackButtonHidden(true)
             .background(Color.backgroundcolor)
             .navigationDestination(isPresented: $goToMain) {
                 MainView()
