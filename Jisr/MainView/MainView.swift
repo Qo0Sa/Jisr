@@ -1,5 +1,4 @@
-
-
+//
 //
 //  MainView.swift
 //  Jisr
@@ -34,7 +33,7 @@ struct MainView: View {
   
     @State private var waitingDestination: WaitingDestination? = nil
     
-    
+    @State private var createdRoom: Room? = nil  // ← ADD THIS
     var body: some View {
         NavigationStack {
             ZStack(alignment: .topLeading) {
@@ -94,12 +93,20 @@ struct MainView: View {
                 
                 if isShowingCreatePopup {
                                    // ← 3. أضف onRoomCreated
-                                   RoomSelectionSheet(
-                                       isPresented: $isShowingCreatePopup,
-                                       onRoomCreated: {
-                                           waitingDestination = .host
-                                       }
-                                   )
+//                                   RoomSelectionSheet(
+//                                       isPresented: $isShowingCreatePopup,
+//                                       onRoomCreated: {
+//                                           waitingDestination = .host
+//                                       }
+//                                   )
+                    RoomSelectionSheet(
+                        isPresented: $isShowingCreatePopup,
+                        onRoomCreated: { room in
+                            createdRoom = room
+                            waitingDestination = .host
+                        }
+                    )
+
                                    .transition(.opacity)
                                }
 
@@ -119,7 +126,15 @@ struct MainView: View {
             .navigationDestination(item: $waitingDestination) { destination in
                            switch destination {
                            case .host:
-                               WaitingRoomView()
+                               if let room = createdRoom {
+                                   WaitingRoomView(
+                                       waitingDestination: $waitingDestination,
+                                       room: room
+                                   )
+                               } else {
+                                   // Fallback if no room is set yet
+                                   Text("Preparing room...")
+                               }
                            case .guest:
                                WaitingRoomForNotHostView()
                            case .profile:

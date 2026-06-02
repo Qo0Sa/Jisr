@@ -6,19 +6,42 @@
 // in ai  لازم احط خانه للاسم المشن و دسكربشن عنها لازم
 // add Dynamic type in accessibility
 
+//
+//  host.swift
+//  Jisr
+//
+//  Created by Wed Ahmed Alasiri on 12/05/2026.
+// in ai  لازم احط خانه للاسم المشن و دسكربشن عنها لازم
+// add Dynamic type in accessibility🔴
+
 import SwiftUI
+import CoreML
 
 struct WaitingRoomView: View {
     
+    
+    @Binding var waitingDestination: WaitingDestination?
+
     @State private var copied = false
-    @State private var roomCode = WaitingRoomView.generateRoomCode()
-    static func generateRoomCode() -> String {
+   
+    let room: Room
 
-        let letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-
-        return String((0..<6).map { _ in
-            letters.randomElement()!
-        })
+    @State private var missionTitle = ""
+    @State private var missionDescription = ""
+    var backgroundImageName: String {
+        switch room.category {
+        case "Cognitive": return "bluebg"
+        case "Physical":  return "greenbg"
+        default:          return "yellowbg"
+        }
+    }
+    
+    var backgroundForBtn: String {
+        switch room.category {
+        case "Cognitive": return "backbtnblue"
+        case "Physical":  return "blackbtngreen"
+        default:          return "back bg"
+        }
     }
     
     
@@ -26,7 +49,7 @@ struct WaitingRoomView: View {
         ZStack(alignment: .bottom) { // جعل العناصر تترتب فوق بعضها
             
             // 1. الخلفية الثابتة
-            Image("yellowbg")
+            Image(backgroundImageName)
                 .resizable()
                 .scaledToFill()
                 .ignoresSafeArea()
@@ -40,14 +63,19 @@ struct WaitingRoomView: View {
                     
                     // الهيدر
                     HStack {
-                        Button(action: {}) {
+                        Button(action: {
+                            waitingDestination = nil
+                        }) {
                             Image(systemName: "chevron.left")
+                            
                                 .font(.system(size: 24, weight: .bold))
                                 .foregroundColor(.black)
                         }
                         Spacer()
-                        Text("Room Name")
-                            .font(.system(size: 22, weight: .bold))
+                        Text(room.name)
+                            .font(.UbuntuBold(size: 22))
+
+//                            .font(.system(size: 22, weight: .bold))
                         Spacer()
                         Color.clear.frame(width: 24)
                     }
@@ -59,13 +87,14 @@ struct WaitingRoomView: View {
                         
                         HStack(alignment: .top) {
 
-                              Text("Mission District Mural Hunt")
-                                 .font(.system(size: 20, weight: .medium))
+                              Text(missionTitle)
+                                .font(.UbuntuBold(size: 20))
+//                                 .font(.system(size: 20, weight: .medium))
                                  .foregroundColor(.black.opacity(0.75))
 
                             Spacer()
                                 Button(action: {
-
+                                    generateMission()
                                     }) {
                                         Image(systemName: "arrow.trianglehead.2.clockwise")
                                             .font(.system(size: 20))
@@ -73,8 +102,9 @@ struct WaitingRoomView: View {
                                         }
                                     }
 
-                                    Text("Go to Mission District and each photograph the mural that moved you the most")
-                                        .font(.system(size: 14))
+                                    Text(missionDescription)
+                                          .font(.UbuntuBold(size: 14))
+//                                        .font(.system(size: 14))
                                         .foregroundColor(.black.opacity(0.7))
                                         .padding(16)
                                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -102,13 +132,12 @@ struct WaitingRoomView: View {
                         
                         HStack {
 
-                            Text(roomCode)
+                            Text(room.code)
                                 .foregroundColor(.gray)
 
                             Button(action: {
 
-                                UIPasteboard.general.string = roomCode
-
+                                UIPasteboard.general.string = room.code
                                 withAnimation {
                                     copied = true
                                 }
@@ -137,7 +166,7 @@ struct WaitingRoomView: View {
                             item: """
                             Join my room in Jisr 
                             
-                            Room Code: \(roomCode)
+                            Room Code: \(room.code)
                             
                             Mission:
                             Mission District Mural Hunt
@@ -186,7 +215,7 @@ struct WaitingRoomView: View {
                 ZStack(alignment: .bottom) {
                     
                     // 1. الصورة اللي تبيها تكون خلفية للزر
-                    Image("back bg") // تأكد من اسم الصورة عندك
+                    Image(backgroundForBtn) // تأكد من اسم الصورة عندك
                         .resizable()
                         .scaledToFill()
                         .frame(height: 160) // ارتفاع المنطقة اللي تغطي السكرول من تحت
@@ -206,7 +235,8 @@ struct WaitingRoomView: View {
                         print("Start Game")
                     }) {
                         Text("Start")
-                            .font(.system(size: 24, weight: .bold))
+                            .font(.UbuntuBold(size: 24))
+//                            .font(.system(size: 24, weight: .bold))
                             .foregroundColor(.white)
                             .frame(width: 220, height: 65)
                             .background(Color(red: 0.15, green: 0.15, blue: 0.15))
@@ -217,6 +247,47 @@ struct WaitingRoomView: View {
                 }
                 .ignoresSafeArea() // يخلي التدرج يوصل لآخر الشاشة
             }
+        }.navigationBarHidden(true)
+        
+        
+        .onAppear {
+            generateMission()
+        }
+    }
+    func generateMission() {
+        do {
+            let config = MLModelConfiguration()
+            let model = try jisr_test_1(configuration: config)
+            
+            let output = try model.prediction(
+                Category: room.category,
+                Location_Type: room.location
+            )
+            
+            let availablePrompts = Array(output.PromptProbability.keys)
+            let chosenPrompt = availablePrompts.randomElement() ?? output.Prompt
+            
+            // Format is: "Mission Title (Description text here)"
+            if let openParen = chosenPrompt.firstIndex(of: "("),
+               let closeParen = chosenPrompt.lastIndex(of: ")") {
+                
+                missionTitle = String(chosenPrompt[..<openParen])
+                    .trimmingCharacters(in: .whitespaces)
+                
+                let descStart = chosenPrompt.index(after: openParen)
+                missionDescription = String(chosenPrompt[descStart..<closeParen])
+                    .trimmingCharacters(in: .whitespaces)
+                
+            } else {
+                // Fallback if format is unexpected
+                missionTitle = "Mission"
+                missionDescription = chosenPrompt
+            }
+            
+        } catch {
+            missionDescription = "Could not load mission."
+            missionTitle = "Mission"
+            print(error.localizedDescription)
         }
     }
     
@@ -238,7 +309,8 @@ struct WaitingRoomView: View {
 
                 Spacer()
                 Text(name)
-                    .font(.system(size: 18, weight: .bold))
+                    .font(.UbuntuBold(size: 18))
+//                    .font(.system(size: 18, weight: .bold))
                     .foregroundColor(.black.opacity(0.8))
                     .padding(.trailing, 60) // ← يعطي مساحة بعد الاسم
 
@@ -252,5 +324,17 @@ struct WaitingRoomView: View {
     }
 }
 #Preview {
-    WaitingRoomView()
+    
+    let previewRoom = Room(
+        name: "Creative Room",
+        code: "ABC-123",
+        category: "Creative",
+        location: "Outdoor",
+        maxPhotos: 5
+    )
+    
+    WaitingRoomView(
+            waitingDestination: .constant(nil),
+            room: previewRoom
+        )
 }

@@ -21,7 +21,8 @@ struct RoomSelectionSheet: View {
     @State private var isOutdoor: Bool = true
     @State private var photoLimit: Int = 3
     
-    var onRoomCreated: () -> Void = {}
+//    var onRoomCreated: () -> Void = {}
+    var onRoomCreated: (Room) -> Void = { _ in }
     
     var body: some View {
         ZStack {
@@ -189,7 +190,8 @@ struct RoomSelectionSheet: View {
         context.insert(newRoom)
         try? context.save()
         isPresented = false
-        onRoomCreated()
+//        onRoomCreated()
+        onRoomCreated(newRoom)
     }
 }
 
