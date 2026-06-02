@@ -11,6 +11,7 @@
 
 import SwiftUI
 import SwiftData
+import PhotosUI
 
 struct ProfileView: View {
     @Environment(\.modelContext) private var context
@@ -21,9 +22,10 @@ struct ProfileView: View {
     @State private var selectedTab: String = "Photos"
     @State private var selectedCategory: String = "Creative"
     
-    // 💡 متغيرات جديدة للتحكم في بوب أب تعديل الاسم
     @State private var isEditingName = false
     @State private var newName: String = ""
+    
+    @State private var selectedPhotoItem: PhotosPickerItem? = nil
     
     var currentUser: User? {
         users.first
@@ -37,10 +39,9 @@ struct ProfileView: View {
     
     var body: some View {
         ZStack {
-            // واجهة البروفايل الأساسية
             VStack(spacing: 0) {
                 
-                // MARK: - الهيدر العلوي لصفحة البروفايل
+                // MARK: - الهيدر العلوي
                 HStack {
                     Button(action: { dismiss() }) {
                         Image(systemName: "chevron.left")
@@ -53,7 +54,7 @@ struct ProfileView: View {
                 .padding(.horizontal, 24)
                 .padding(.top, 16)
                 
-                // MARK: - معلومات المستخدم (الأفاتار والاسم مع زر التعديل)
+                // MARK: - معلومات المستخدم
                 VStack(spacing: 12) {
                     ZStack {
                         Circle()
@@ -72,8 +73,37 @@ struct ProfileView: View {
                                 .foregroundColor(.black.opacity(0.3))
                         }
                     }
+                    .overlay(alignment: .bottomTrailing) {
+                                            PhotosPicker(selection: $selectedPhotoItem, matching: .images, photoLibrary: .shared()) {
+                                                ZStack {
+                                                    Circle()
+                                                        .fill(Color("buttonColor"))
+                                                        .frame(width: 23, height: 23)
+                                                        .overlay(
+                                                            Circle().stroke(Color.white, lineWidth: 1.5)
+                                                        )
+                                                    
+                                                    Image(systemName: "plus")
+                                                        .font(.system(size: 12, weight: .medium))
+                                                        .foregroundColor(.white)
+                                                }
+                                            }
+                                            .offset(x: 0, y: 0)
+                                        }
+                                        // 💡 4. saving in swiftdata
+                                        .onChange(of: selectedPhotoItem) { _, newValue in
+                                            Task {
+                                            
+                                                if let data = try? await newValue?.loadTransferable(type: Data.self) {
+                                                    if let user = currentUser {
+                                                        user.profileImage = data
+                                                        try? context.save()
+                                                    }
+                                                }
+                                            }
+                                        }
                     
-                    // 💡 زر الاسم والقلم لتفعيل التعديل عند الضغط
+                    // 💡 button
                     Button(action: {
                         newName = currentUser?.name ?? "myname"
                         withAnimation(.easeInOut(duration: 0.2)) {
@@ -90,7 +120,7 @@ struct ProfileView: View {
                                 .foregroundColor(.black.opacity(0.6))
                         }
                     }
-                    .buttonStyle(PlainButtonStyle()) // للحفاظ على التصميم بدون تلوين الزر بالأزرق
+                    .buttonStyle(PlainButtonStyle())
                 }
                 .padding(.top, 10)
                 
@@ -103,7 +133,7 @@ struct ProfileView: View {
                 .padding(.horizontal, 24)
                 .padding(.top, 24)
                 
-                // MARK: - كبسولة التحكم بالتبويبات المخصصة (Photos / Rooms)
+                // MARK: - (Photos / Rooms)
                 HStack(spacing: 0) {
                     Button(action: { selectedTab = "Photos" }) {
                         Text("Photos")
@@ -134,7 +164,7 @@ struct ProfileView: View {
                 .padding(.horizontal, 24)
                 .padding(.top, 12)
                 
-                // MARK: - شريط الأيقونات المخصص (الكبسولات الذكية الممتدة بالتفاعل)
+                // MARK: - categories
                 HStack(spacing: 12) {
                     ForEach(categoryFilters, id: \.name) { filter in
                         Button(action: {
@@ -168,7 +198,7 @@ struct ProfileView: View {
                     .padding(.horizontal, 24)
                     .padding(.top, 16)
                 
-                // MARK: - استدعاء الـ Subviews المنفصلة بشكل نظيف وديناميكي
+                // MARK: - calling supviews (tap)
                 ScrollView(.vertical, showsIndicators: false) {
                     VStack {
                         if selectedTab == "Photos" {
@@ -184,15 +214,14 @@ struct ProfileView: View {
             .background(Color("Backgroundcolor").ignoresSafeArea())
             .navigationBarBackButtonHidden(true)
             
-            // MARK: - 💡 نافذة منبثقة مخصصة لتعديل الاسم (Custom Edit Popup)
+            // MARK: - 💡 (Custom Edit Popup)
             if isEditingName {
                 ZStack {
-                    // خلفية ضبابية داكنة مع إمكانية الإغلاق عند النقر بالخارج
                     Color.black.opacity(0.3)
                         .ignoresSafeArea()
                         .onTapGesture { isEditingName = false }
                     
-                    // كارد التعديل الأبيض المصمم بلغة هوية التطبيق
+                
                     VStack(spacing: 20) {
                         Text("Edit Name")
                             .font(.UbuntuBold(size: 20))
@@ -207,7 +236,7 @@ struct ProfileView: View {
                             .autocorrectionDisabled()
                         
                         HStack(spacing: 12) {
-                            // زر إلغاء الأمر
+                            // cancel
                             Button(action: { isEditingName = false }) {
                                 Text("Cancel")
                                     .font(.UbuntuBold(size: 16))
@@ -218,7 +247,7 @@ struct ProfileView: View {
                                     .clipShape(RoundedRectangle(cornerRadius: 12))
                             }
                             
-                            // زر حفظ الاسم في SwiftData
+                            // saving name
                             Button(action: saveNameAction) {
                                 Text("Save")
                                     .font(.UbuntuBold(size: 16))
@@ -242,11 +271,12 @@ struct ProfileView: View {
         }
     }
     
-    // 💡 دالة الحفظ والتعديل الفعلي داخل السويفت داتا
+    // 💡 saving in swiftdata
+
     private func saveNameAction() {
         if let user = currentUser {
             user.name = newName
-            try? context.save() // حفظ التعديل في قاعدة البيانات
+            try? context.save()
         }
         withAnimation(.easeInOut(duration: 0.2)) {
             isEditingName = false
