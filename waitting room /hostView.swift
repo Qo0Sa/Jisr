@@ -25,12 +25,29 @@ struct WaitingRoomView: View {
 
     @State private var missionTitle = ""
     @State private var missionDescription = ""
+    var backgroundImageName: String {
+        switch room.category {
+        case "Cognitive": return "bluebg"
+        case "Physical":  return "greenbg"
+        default:          return "yellowbg"
+        }
+    }
     
+    var backgroundForBtn: String {
+        switch room.category {
+        case "Cognitive": return "backbtnblue"
+        case "Physical":  return "blackbtngreen"
+        default:          return "back bg"
+        }
+    }
+    
+    
+    @Environment(\.dismiss) private var dismiss
     var body: some View {
         ZStack(alignment: .bottom) { // جعل العناصر تترتب فوق بعضها
             
             // 1. الخلفية الثابتة
-            Image("yellowbg")
+            Image(backgroundImageName)
                 .resizable()
                 .scaledToFill()
                 .ignoresSafeArea()
@@ -44,7 +61,7 @@ struct WaitingRoomView: View {
                     
                     // الهيدر
                     HStack {
-                        Button(action: {}) {
+                        Button(action: {    dismiss()}) {
                             Image(systemName: "chevron.left")
                             
                                 .font(.system(size: 24, weight: .bold))
@@ -194,7 +211,7 @@ struct WaitingRoomView: View {
                 ZStack(alignment: .bottom) {
                     
                     // 1. الصورة اللي تبيها تكون خلفية للزر
-                    Image("back bg") // تأكد من اسم الصورة عندك
+                    Image(backgroundForBtn) // تأكد من اسم الصورة عندك
                         .resizable()
                         .scaledToFill()
                         .frame(height: 160) // ارتفاع المنطقة اللي تغطي السكرول من تحت
@@ -226,7 +243,10 @@ struct WaitingRoomView: View {
                 }
                 .ignoresSafeArea() // يخلي التدرج يوصل لآخر الشاشة
             }
-        }.onAppear {
+        }.navigationBarHidden(true)
+        
+        
+        .onAppear {
             generateMission()
         }
     }
