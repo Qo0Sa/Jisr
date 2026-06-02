@@ -33,7 +33,7 @@ struct ProfileView: View {
     
     let categoryFilters = [
         (name: "Physical", icon: "figure.run", color: "physicalColor"),
-        (name: "Mental", icon: "book.closed.fill", color: "cognitiveColor"),
+        (name: "Cognitive", icon: "book.closed.fill", color: "cognitiveColor"),
         (name: "Creative", icon: "paintpalette.fill", color: "creativeColor")
     ]
     

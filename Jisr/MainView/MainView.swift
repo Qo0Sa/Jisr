@@ -14,6 +14,9 @@ enum WaitingDestination: Hashable {
     case host
     case guest
     case profile
+    
+    
+    var id: Self { self } //wed
 }
 
 struct MainView: View {
