@@ -12,13 +12,16 @@
 //
 //  Created by Wed Ahmed Alasiri on 12/05/2026.
 // in ai  لازم احط خانه للاسم المشن و دسكربشن عنها لازم
-// add Dynamic type in accessibility
+// add Dynamic type in accessibility🔴
 
 import SwiftUI
 import CoreML
 
 struct WaitingRoomView: View {
     
+    
+    @Binding var waitingDestination: WaitingDestination?
+
     @State private var copied = false
    
     let room: Room
@@ -42,7 +45,6 @@ struct WaitingRoomView: View {
     }
     
     
-    @Environment(\.dismiss) private var dismiss
     var body: some View {
         ZStack(alignment: .bottom) { // جعل العناصر تترتب فوق بعضها
             
@@ -61,7 +63,9 @@ struct WaitingRoomView: View {
                     
                     // الهيدر
                     HStack {
-                        Button(action: {    dismiss()}) {
+                        Button(action: {
+                            waitingDestination = nil
+                        }) {
                             Image(systemName: "chevron.left")
                             
                                 .font(.system(size: 24, weight: .bold))
@@ -329,5 +333,8 @@ struct WaitingRoomView: View {
         maxPhotos: 5
     )
     
-    WaitingRoomView(room: previewRoom)
+    WaitingRoomView(
+            waitingDestination: .constant(nil),
+            room: previewRoom
+        )
 }

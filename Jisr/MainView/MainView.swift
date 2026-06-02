@@ -127,7 +127,10 @@ struct MainView: View {
                            switch destination {
                            case .host:
                                if let room = createdRoom {
-                                   WaitingRoomView(room: room)
+                                   WaitingRoomView(
+                                       waitingDestination: $waitingDestination,
+                                       room: room
+                                   )
                                } else {
                                    // Fallback if no room is set yet
                                    Text("Preparing room...")
