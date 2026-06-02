@@ -105,6 +105,9 @@ struct Onboarding3View: View {
                                             Capsule().fill(Color.button)
                                         )
                                 }
+                                .navigationDestination(isPresented: $navigateToName) {
+                                    NameView()
+                                }
                                 .frame(width: 90)
                             }
                             .padding(.top, 35)
