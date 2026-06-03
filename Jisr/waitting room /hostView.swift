@@ -24,6 +24,8 @@ struct WaitingRoomView: View {
 
     @State private var copied = false
    
+    var isStarted: Bool = false
+    
     let room: Room
 
     @State private var missionTitle = ""
@@ -232,8 +234,9 @@ struct WaitingRoomView: View {
                     
                     // 2. زر البدء
                     Button(action: {
+                        room.isStarted = true 
                         print("Start Game")
-                    }) {
+                    })  {
                         Text("Start")
                             .font(.UbuntuBold(size: 24))
 //                            .font(.system(size: 24, weight: .bold))

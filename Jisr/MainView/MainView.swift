@@ -312,28 +312,30 @@ struct RoomCardView: View {
     let room: Room
 
     var cardColor: Color {
+        guard room.isStarted else {
+            return Color(.systemGray5)  // ← رمادي لو ما بدأت
+        }
+        
         switch room.category {
         case "Cognitive":
             return Color("cognitiveColor")
-
         case "Creative":
             return Color("creativeColor")
-
         default:
             return Color("physicalColor")
         }
     }
-
+    
     var categoryIcons: [String] {
         switch room.category {
         case "Cognitive":
-            return ["books.vertical.fill", "graduationcap.fill"]
+            return ["books.vertical.fill", "graduationcap.fill", "puzzlepiece.fill"]
 
         case "Creative":
             return ["paintpalette.fill", "music.note", "camera.fill"]
 
         default:
-            return ["figure.run", "leaf.fill"]
+            return ["figure.run", "leaf.fill", "soccerball"]
         }
     }
 
@@ -413,18 +415,70 @@ struct RoomCardView: View {
                 )
             
                 .overlay {
-
-                    HStack(spacing: -10) {
-
-                        ForEach(categoryIcons, id: \.self) { icon in
-
-                            Image(systemName: icon)
-                                .font(.system(size: 65, weight: .bold))
-                                .foregroundColor(.white.opacity(0.14))
+                    VStack(alignment: .leading) {
+                        
+                        // ← اسم الروم + صورة الهوست في الزاوية العلوية اليسرى
+                        HStack(spacing: 8) {
+                            // صورة الهوست
+                            if let imageData = room.createdBy?.profileImage,
+                               let uiImage = UIImage(data: imageData) {
+                                Image(uiImage: uiImage)
+                                    .resizable()
+                                    .scaledToFill()
+                                    .frame(width: 38, height: 38)
+                                    .clipShape(Circle())
+                            } else {
+                                Circle()
+                                    .fill(Color.white.opacity(0.4))
+                                    .frame(width: 38, height: 38)
+                                    .overlay {
+                                        Image(systemName: "person.fill")
+                                            .foregroundColor(.white.opacity(0.8))
+                                    }
+                            }
+                            
+                            // اسم الروم
+                            Text(room.name)
+                                .font(.UbuntuBold(size: 22))
+                                .foregroundColor(room.isStarted ? .button : .button)
+                        }
+                        .padding(14)
+                        
+                        Spacer()
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    
+                    // الأيقونات في الخلفية
+                    VStack(spacing: -15) {
+                        // صفين أيقونتين فوق
+                        HStack(spacing: -10) {
+                            ForEach(categoryIcons.prefix(2), id: \.self) { icon in
+                                Image(systemName: icon)
+                                    .font(.system(size: 55, weight: .bold))
+                                    .foregroundColor(
+                                        room.isStarted
+                                        ? .black.opacity(0.08)
+                                        : .white.opacity(0.14)
+                                    )
+                                    .rotationEffect(.degrees(-10))
+                            }
+                        }
+                        
+                        // الأيقونة الثالثة في المنتصف
+                        if categoryIcons.count > 2 {
+                            Image(systemName: categoryIcons[2])
+                                .font(.system(size: 55, weight: .bold))
+                                .foregroundColor(
+                                    room.isStarted
+                                    ? .black.opacity(0.08)
+                                    : .white.opacity(0.14)
+                                )
                                 .rotationEffect(.degrees(-10))
                         }
                     }
-                }
+                    .frame(maxWidth: .infinity, alignment: .trailing)
+                    .padding(.trailing, 10)                }
+
                 .shadow(
                     color: cardColor.opacity(0.35),
                     radius: 18,

@@ -33,6 +33,7 @@ class Room {
     var location: String = ""
     var maxPhotos: Int = 0
     var isClosed: Bool = false
+    var isStarted: Bool = false
     var createdBy: User? = nil
     
     @Relationship(deleteRule: .cascade, inverse: \Photo.room)
@@ -45,6 +46,7 @@ class Room {
         self.location = location
         self.maxPhotos = maxPhotos
         self.isClosed = false
+        self.isStarted = false  
     }
 }
 
