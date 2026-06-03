@@ -14,7 +14,7 @@ enum WaitingDestination: Hashable {
     case host
     case guest
     case profile
-    
+    case camera //wed
     
     var id: Self { self } //wed
 }
@@ -125,26 +125,60 @@ struct MainView: View {
                                }
                            }
             
+//            
+//            .navigationDestination(item: $waitingDestination) { destination in
+////                           switch destination {
+////                           case .host:
+////                               if let room = createdRoom {
+////                                   WaitingRoomView(
+////                                       waitingDestination: $waitingDestination,
+////                                       room: room
+////                                   )
+////                               } else {
+////                                   // Fallback if no room is set yet
+////                                   Text("Preparing room...")
+////                               }
+////                           case .guest:
+////                               WaitingRoomForNotHostView()
+////                           case .profile:
+////                                               ProfileView()
+////                           }
+//                       }
             
             .navigationDestination(item: $waitingDestination) { destination in
-                           switch destination {
-                           case .host:
-                               if let room = createdRoom {
-                                   WaitingRoomView(
-                                       waitingDestination: $waitingDestination,
-                                       room: room
-                                   )
-                               } else {
-                                   // Fallback if no room is set yet
-                                   Text("Preparing room...")
-                               }
-                           case .guest:
-                               WaitingRoomForNotHostView()
-                           case .profile:
-                                               ProfileView()
-                           }
-                       }
-                       .onAppear {
+                switch destination {
+
+                case .host:
+                    if let room = createdRoom {
+                        WaitingRoomView(
+                            waitingDestination: $waitingDestination,
+                            room: room
+                        )
+                    } else {
+                        Text("Preparing room...")
+                    }
+
+                case .guest:
+                    WaitingRoomForNotHostView()
+
+                case .profile:
+                    ProfileView()
+
+                case .camera:
+                    if let room = createdRoom {
+                        RoomCamera(
+                            room: room,
+                            isShowingFeed: .constant(false),
+                            onPhotoCaptured: { image in
+                                print("Captured")
+                            }
+                        )
+                    } else {
+                        Text("No room found")
+                    }
+                }
+            }
+            .onAppear {
                            viewModel.loadUser(context: context)
                        }
                        .navigationBarBackButtonHidden(true)

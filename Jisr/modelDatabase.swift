@@ -35,6 +35,10 @@ class Room {
     var isClosed: Bool = false
     var createdBy: User? = nil
     
+    // wed 
+      var missionTitle: String = ""
+      var missionDescription: String = ""
+    
     @Relationship(deleteRule: .cascade, inverse: \Photo.room)
     var photos: [Photo]? = []
     

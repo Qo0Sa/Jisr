@@ -40,11 +40,19 @@ struct RoomCamera: View {
             // 2. كارد التحدي العائم (PromptCard المتروك للـ CoreML لاحقاً)
             VStack {
                 VStack(alignment: .leading, spacing: 8) {
-                    Text(room.name)
+//                    Text(room.name)
+//                        .font(.UbuntuBold(size: 18))
+//                        .foregroundColor(.black)
+//                    
+//                    Text("Go together and capture a memorable moment that connects you all!")
+//                        .font(.Ubuntu(size: 14))
+//                        .foregroundColor(.black.opacity(0.6))
+//                        .lineSpacing(3)
+                    Text(room.missionTitle)
                         .font(.UbuntuBold(size: 18))
                         .foregroundColor(.black)
-                    
-                    Text("Go together and capture a memorable moment that connects you all!")
+
+                    Text(room.missionDescription)
                         .font(.Ubuntu(size: 14))
                         .foregroundColor(.black.opacity(0.6))
                         .lineSpacing(3)
