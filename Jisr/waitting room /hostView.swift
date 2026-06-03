@@ -13,7 +13,10 @@
 //  Created by Wed Ahmed Alasiri on 12/05/2026.
 // in ai  لازم احط خانه للاسم المشن و دسكربشن عنها لازم
 // add Dynamic type in accessibility🔴
-
+// غيري الخط حق المودل
+//اربطي الصفحه ذي بالصفحه وتين الكاميرا
+//تاكدي من انه سويتي نفس الشي للقست
+// اتاكد من الداتا بيس 
 import SwiftUI
 import CoreML
 
@@ -110,7 +113,9 @@ struct WaitingRoomView: View {
                                         .foregroundColor(.black.opacity(0.7))
                                         .padding(16)
                                         .frame(maxWidth: .infinity, alignment: .leading)
-                                        .background(Color(red: 233/255, green: 227/255, blue: 214/255))
+                                        .background(Color(red: 248/255,
+                                                          green: 242/255,
+                                                          blue: 230/255))
                                         .cornerRadius(18)
 
                                 }
@@ -234,9 +239,11 @@ struct WaitingRoomView: View {
                     
                     // 2. زر البدء
                     Button(action: {
-                        room.isStarted = true 
-                        print("Start Game")
-                    })  {
+                        room.missionTitle = missionTitle
+                           room.missionDescription = missionDescription
+
+                           waitingDestination = .camera
+                    }) {
                         Text("Start")
                             .font(.UbuntuBold(size: 24))
 //                            .font(.system(size: 24, weight: .bold))
@@ -273,13 +280,25 @@ struct WaitingRoomView: View {
             // Format is: "Mission Title (Description text here)"
             if let openParen = chosenPrompt.firstIndex(of: "("),
                let closeParen = chosenPrompt.lastIndex(of: ")") {
-                
-                missionTitle = String(chosenPrompt[..<openParen])
+//                
+//                missionTitle = String(chosenPrompt[..<openParen])
+//                    .trimmingCharacters(in: .whitespaces)
+//                
+//                let descStart = chosenPrompt.index(after: openParen)
+//                missionDescription = String(chosenPrompt[descStart..<closeParen])
+//                    .trimmingCharacters(in: .whitespaces)
+                let title = String(chosenPrompt[..<openParen])
                     .trimmingCharacters(in: .whitespaces)
-                
+
                 let descStart = chosenPrompt.index(after: openParen)
-                missionDescription = String(chosenPrompt[descStart..<closeParen])
+                let description = String(chosenPrompt[descStart..<closeParen])
                     .trimmingCharacters(in: .whitespaces)
+
+                missionTitle = title
+                missionDescription = description
+
+                room.missionTitle = title
+                room.missionDescription = description
                 
             } else {
                 // Fallback if format is unexpected
@@ -307,8 +326,9 @@ struct WaitingRoomView: View {
                 Image(image)
                     .resizable()
                     .scaledToFill()
-                    .frame(width: 60, height: 60)
+                    .frame(width: 50, height: 50)
                     .clipShape(Circle())
+                    .offset(x:-10)
 
                 Spacer()
                 Text(name)
@@ -319,7 +339,7 @@ struct WaitingRoomView: View {
 
             }
             .padding(.horizontal, 18)
-            .padding(.vertical, 12)
+            .padding(.vertical, 6)
             .background(Color.white.opacity(0.6))
             .cornerRadius(45)
             .fixedSize() // ✨ هذا المهم
