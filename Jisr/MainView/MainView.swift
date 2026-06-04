@@ -346,10 +346,11 @@ struct RoomsListView: View {
     var body: some View {
 
         ScrollView(showsIndicators: false) {
-            VStack(spacing: 16) {
+            VStack(spacing: -40) {  // ← spacing سالب عشان يتغطى
                 
-                ForEach(rooms) { room in
+                ForEach(Array(rooms.enumerated()), id: \.element.id) { index, room in
                     RoomCardView(room: room)
+                        .zIndex(Double(index))  // ← الأول فوق
                 }
                 
                 DashedCard {
@@ -357,25 +358,42 @@ struct RoomsListView: View {
                         showRoomOptions = true
                     } label: {
                         Image(systemName: "plus")
-                            .font(.system(size: 25, weight: .light))
+                            .font(.system(size: 32, weight: .light))
+                            .foregroundColor(.black)
                     }
                 }
+                .padding(.horizontal, 20)
                 .opacity(0.6)
+                .zIndex(Double(rooms.count + 1))
             }
-            .padding(.horizontal, 24) // فقط مرة وحدة
+            .padding(.horizontal, 24)
             .padding(.top, 40)
         }
     }
 }
-
 // MARK: - كارد الروم
 struct RoomCardView: View {
     
     let room: Room
 
+    var categoryIconColor: Color {
+        guard room.isStarted else {
+            return Color(.systemGray3)
+        }
+        
+        switch room.category {
+        case "Cognitive":
+            return Color("conicon")
+        case "Creative":
+            return Color("cricon")
+        default:
+            return Color("phicon")
+        }
+    }
+    
     var cardColor: Color {
         guard room.isStarted else {
-            return Color(.systemGray5)  // ← رمادي لو ما بدأت
+            return Color(.systemGray4)  // ← رمادي لو ما بدأت
         }
         
         switch room.category {
@@ -409,8 +427,8 @@ struct RoomCardView: View {
                 // Layer 3
                 RoundedRectangle(cornerRadius: 28)
                     .fill(Color(cardColor))
-                    .frame(height: 150)
-                    .offset(y: 18)
+                    .frame(width: 333, height: 186)
+                    .offset(y: 10)
                     .scaleEffect(0.92)
                     .shadow(
                         color: .black.opacity(0.04),
@@ -426,7 +444,7 @@ struct RoomCardView: View {
             // Layer 2
             RoundedRectangle(cornerRadius: 28)
                 .fill(Color(cardColor))
-                .frame(height: 150)
+                .frame(width: 333, height: 186)
                 .offset(y: 9)
                 .scaleEffect(0.96)
                 .shadow(
@@ -438,33 +456,12 @@ struct RoomCardView: View {
             // Main Card
             RoundedRectangle(cornerRadius: 28)
                 .fill(Color(cardColor))
-                .frame(height: 150)
+                .frame(width: 333, height: 186)
                 .overlay(alignment: .topLeading) {
 
                     
-                    //                    HStack(spacing: 10) {
-                    //
-                    //                        Circle()
-                    //                            .fill(Color.white.opacity(0.25))
-                    //                            .frame(width: 38, height: 38)
-                    //                            .overlay {
-                    //                                Image(systemName: "person.fill")
-                    //                                    .foregroundColor(.white)
-                    //                            }
-                    //
-                    //                        Text(room.name)
-                    //                            .font(.UbuntuBold(size: 17))
-                    //                            .foregroundColor(.white)
-                    //                    }
-                    //                    .padding(14)
-                    RoundedRectangle(cornerRadius: 28)
-                        .strokeBorder(
-                            style: StrokeStyle(
-                                lineWidth: 2.5,
-                                dash: [10, 6]
-                            )
-                        )
-                        .foregroundColor(.black.opacity(0.65))
+                   
+                   
                 }
                 .shadow(
                     color: .black.opacity(0.08),
@@ -517,11 +514,7 @@ struct RoomCardView: View {
                             ForEach(categoryIcons.prefix(2), id: \.self) { icon in
                                 Image(systemName: icon)
                                     .font(.system(size: 55, weight: .bold))
-                                    .foregroundColor(
-                                        room.isStarted
-                                        ? .black.opacity(0.08)
-                                        : .white.opacity(0.14)
-                                    )
+                                    .foregroundColor(categoryIconColor)
                                     .rotationEffect(.degrees(-10))
                             }
                         }
@@ -530,11 +523,7 @@ struct RoomCardView: View {
                         if categoryIcons.count > 2 {
                             Image(systemName: categoryIcons[2])
                                 .font(.system(size: 55, weight: .bold))
-                                .foregroundColor(
-                                    room.isStarted
-                                    ? .black.opacity(0.08)
-                                    : .white.opacity(0.14)
-                                )
+                                .foregroundColor(categoryIconColor)
                                 .rotationEffect(.degrees(-10))
                         }
                     }
@@ -551,7 +540,8 @@ struct RoomCardView: View {
                     axis: (x: 1, y: 0, z: 0)
                 )
         }
-        .padding(.vertical, -18)
+        .padding(.vertical, 0)
+        
     }
 }
 
@@ -584,6 +574,9 @@ struct ProfileAvatarView: View {
         }
     }
 }
+
+
+
 
 #Preview {
     MainView()
