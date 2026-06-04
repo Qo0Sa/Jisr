@@ -175,5 +175,5 @@ struct WaitingRoomForNotHostView: View {
     
 //
 //#Preview {
-//    WaitingRoomForNotHostView()
+//    WaitingRoomForNotHostView(room: <#Room#>)
 //}

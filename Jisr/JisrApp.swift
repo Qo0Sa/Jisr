@@ -17,7 +17,7 @@ struct JisrApp: App {
             SplashView()
                 .environmentObject(layerState)
         }
-        .modelContainer(for: [User.self, Room.self, Photo.self])
+        .modelContainer(for: [User.self, Room.self, Photo.self ,RoomParticipant.self])
     }
 }
 
