@@ -17,7 +17,7 @@ struct Onboarding3View: View {
     
     var body: some View {
         
-        NavigationStack {
+      //  NavigationStack {
             ZStack {
                 
                 Color.backgroundcolor
@@ -106,8 +106,9 @@ struct Onboarding3View: View {
                                         )
                                 }
                                 .navigationDestination(isPresented: $navigateToName) {
-                                    NameView()
-                                }
+                                                    NameView()
+                                                }
+                                
                                 .frame(width: 90)
                             }
                             .padding(.top, 35)
@@ -122,7 +123,7 @@ struct Onboarding3View: View {
                 .navigationBarBackButtonHidden(true)
             }
         }
-    }
+    
     
 }
 

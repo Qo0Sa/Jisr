@@ -42,7 +42,7 @@ class Room {
     // wed
       var missionTitle: String = ""
       var missionDescription: String = ""
-    var isStarted: Bool = false //for not host
+ //   var isStarted: Bool = false //for not host
     
     @Relationship(deleteRule: .cascade, inverse: \Photo.room)
     var photos: [Photo]? = []
