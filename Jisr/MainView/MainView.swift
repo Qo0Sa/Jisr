@@ -14,7 +14,6 @@ enum WaitingDestination: Hashable {
     case host
     case guest
     case profile
-    case camera //wed
     
     var id: Self { self } //wed
 }
@@ -116,9 +115,17 @@ struct MainView: View {
 
                                if isShowingJoinPopup {
                                    // ← 4. أضف onJoined
+//                                   JoinWithCodeSheet(
+//                                       isPresented: $isShowingJoinPopup,
+//                                       onJoined: {
+//                                           waitingDestination = .guest
+//                                       }
+//                                   )
+                                   //wed
                                    JoinWithCodeSheet(
                                        isPresented: $isShowingJoinPopup,
-                                       onJoined: {
+                                       onJoined: { room in
+                                           createdRoom = room
                                            waitingDestination = .guest
                                        }
                                    )
@@ -126,7 +133,7 @@ struct MainView: View {
                                }
                            }
             
-//            
+//
 //            .navigationDestination(item: $waitingDestination) { destination in
 ////                           switch destination {
 ////                           case .host:
@@ -160,22 +167,26 @@ struct MainView: View {
                     }
 
                 case .guest:
-                    WaitingRoomForNotHostView()
+                    if let room = createdRoom {
+                           WaitingRoomForNotHostView(room: room)
+                       } else {
+                           Text("Preparing room...")
+                       }
 
                 case .profile:
                     ProfileView()
 
-                case .camera:
-                    if let room = createdRoom {
-                        RoomCamera(
-                            room: room,
-                            isShowingFeed: .constant(false),
-                            onPhotoCaptured: { image in
-                                print("Captured")
-                            }
-                        )
-                    } else {
-                        Text("No room found")
+//                case .camera:
+//                    if let room = createdRoom {
+//                        RoomCamera(
+//                            room: room,
+//                            isShowingFeed: .constant(false),
+//                            onPhotoCaptured: { image in
+//                                print("Captured")
+//                            }
+//                        )
+//                    } else {
+//                        Text("No room found")
                     }
                 }
             }
@@ -215,7 +226,7 @@ struct MainView: View {
                        }
                    }
                }
-           }
+//           }
 
 // MARK: - Empty State
 struct EmptyRoomsView: View {

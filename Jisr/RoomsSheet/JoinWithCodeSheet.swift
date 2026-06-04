@@ -6,14 +6,19 @@
 //
 
 import SwiftUI
+import SwiftData
+
 
 struct JoinWithCodeSheet: View {
     @Binding var isPresented: Bool
     @State private var roomCode: String = ""
     @FocusState private var isTextFieldFocused: Bool
     
-    var onJoined: () -> Void = {}
+//    var onJoined: () -> Void = {}
     
+//wed
+    var onJoined: (Room) -> Void = { _ in }
+    @Environment(\.modelContext) private var context
     var body: some View {
         ZStack {
             Color.black.opacity(0.4)
@@ -49,7 +54,16 @@ struct JoinWithCodeSheet: View {
                 
                 Button(action: {
                     isPresented = false
-                    onJoined()
+//                    onJoined()
+                    //wed
+                    let descriptor = FetchDescriptor<Room>()
+
+                       if let room = try? context.fetch(descriptor)
+                           .first(where: { $0.code == roomCode }) {
+
+                           onJoined(room)
+                           isPresented = false
+                       }
                 }) {
                     Text("Join")
                         .font(.UbuntuBold(size: 20))

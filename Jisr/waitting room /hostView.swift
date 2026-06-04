@@ -16,9 +16,10 @@
 // غيري الخط حق المودل
 //اربطي الصفحه ذي بالصفحه وتين الكاميرا
 //تاكدي من انه سويتي نفس الشي للقست
-// اتاكد من الداتا بيس 
+// اتاكد من الداتا بيس
 import SwiftUI
 import CoreML
+import SwiftData
 
 struct WaitingRoomView: View {
     
@@ -48,6 +49,10 @@ struct WaitingRoomView: View {
     }
     
     
+    @State private var goToCamera = false
+    
+    
+    @Environment(\.modelContext) private var context
     var body: some View {
         ZStack(alignment: .bottom) { // جعل العناصر تترتب فوق بعضها
             
@@ -131,7 +136,10 @@ struct WaitingRoomView: View {
                     
                     // زر النسخ (نهاية العناصر الثابتة)
                     HStack {
-                        Label("5", systemImage: "person.fill")
+                        Label(
+                            "\(room.participants?.count ?? 0)",
+                            systemImage: "person.fill"
+                        )
 //                        Spacer()
 //                            .offset(x:-10)
                         
@@ -194,13 +202,13 @@ struct WaitingRoomView: View {
                 ScrollView(showsIndicators: false) {
                     VStack(spacing: 15) {
                         // قائمة المستخدمين
-                        UserCard(name: "ess", image: "person1")
-                        UserCard(name: "ayad.200", image: "person1")
-                        UserCard(name: "charlie alixander", image: "person1")
-                        UserCard(name: "lionnn.15", image: "person1")
-                        UserCard(name: "wiliam better.2", image: "person1")
-                        UserCard(name: "New Player 1", image: "person1")
-                        UserCard(name: "New Player 2", image: "person1")
+                        ForEach(room.participants ?? [], id: \.persistentModelID) { participant in
+
+                            UserCard(
+                                name: participant.user?.name ?? "Unknown",
+                                image: "person1"
+                            )
+                        }
                         
                         // مساحة إضافية في نهاية السكرول عشان آخر اسم ما يغطي عليه زر الـ Start
                         Color.clear.frame(height: 30)
@@ -237,10 +245,13 @@ struct WaitingRoomView: View {
                     
                     // 2. زر البدء
                     Button(action: {
+                        room.isStarted = true
+                        
                         room.missionTitle = missionTitle
-                           room.missionDescription = missionDescription
-
-                           waitingDestination = .camera
+                        room.missionDescription = missionDescription
+                        try? context.save()
+                        
+                        goToCamera = true
                     }) {
                         Text("Start")
                             .font(.UbuntuBold(size: 24))
@@ -252,10 +263,23 @@ struct WaitingRoomView: View {
                             .shadow(color: .black.opacity(0.3), radius: 10, x: 0, y: 5)
                     }
                     .padding(.bottom, 40) // ارفعه شوي عن الحافة السفلية
+                    
+                    
                 }
                 .ignoresSafeArea() // يخلي التدرج يوصل لآخر الشاشة
             }
-        }.navigationBarHidden(true)
+        }
+        
+        .navigationDestination(isPresented: $goToCamera) {
+            RoomCamera(
+                room: room,
+                isShowingFeed: .constant(false),
+                onPhotoCaptured: { image in
+                    print("Captured")
+                }
+            )
+        }
+        .navigationBarHidden(true)
         
         
         .onAppear {
@@ -278,10 +302,10 @@ struct WaitingRoomView: View {
             // Format is: "Mission Title (Description text here)"
             if let openParen = chosenPrompt.firstIndex(of: "("),
                let closeParen = chosenPrompt.lastIndex(of: ")") {
-//                
+//
 //                missionTitle = String(chosenPrompt[..<openParen])
 //                    .trimmingCharacters(in: .whitespaces)
-//                
+//
 //                let descStart = chosenPrompt.index(after: openParen)
 //                missionDescription = String(chosenPrompt[descStart..<closeParen])
 //                    .trimmingCharacters(in: .whitespaces)
@@ -297,6 +321,7 @@ struct WaitingRoomView: View {
 
                 room.missionTitle = title
                 room.missionDescription = description
+                try? context.save()
                 
             } else {
                 // Fallback if format is unexpected
