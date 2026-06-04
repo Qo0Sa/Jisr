@@ -98,7 +98,7 @@ struct WaitingRoomView: View {
                         HStack(alignment: .top) {
 
                               Text(missionTitle)
-                                .font(.UbuntuBold(size: 20))
+                                .font(.system(size: 20))
 //                                 .font(.system(size: 20, weight: .medium))
                                  .foregroundColor(.black.opacity(0.75))
 
@@ -113,7 +113,7 @@ struct WaitingRoomView: View {
                                     }
 
                                     Text(missionDescription)
-                                          .font(.UbuntuBold(size: 14))
+                                          .font(.system(size: 14))
 //                                        .font(.system(size: 14))
                                         .foregroundColor(.black.opacity(0.7))
                                         .padding(16)
@@ -208,7 +208,7 @@ struct WaitingRoomView: View {
 
                             UserCard(
                                 name: participant.user?.name ?? "Unknown",
-                                image: "person1"
+                                imageData: participant.user?.profileImage
                             )
                         }
                         
@@ -273,13 +273,10 @@ struct WaitingRoomView: View {
         }
         
         .navigationDestination(isPresented: $goToCamera) {
-            RoomCamera(
-                room: room,
-                isShowingFeed: .constant(false),
-                onPhotoCaptured: { image in
-                    print("Captured")
-                }
-            )
+            RoomContainer(
+                  room: room,
+                  isHost: true
+              )
         }
         .navigationBarHidden(true)
         
@@ -342,18 +339,41 @@ struct WaitingRoomView: View {
     struct UserCard: View {
         
         let name: String
-        let image: String
+        let imageData: Data?
 
         var body: some View {
 
             HStack(spacing: 15) {
 
-                Image(image)
-                    .resizable()
-                    .scaledToFill()
-                    .frame(width: 50, height: 50)
-                    .clipShape(Circle())
-                    .offset(x:-10)
+                if let imageData,
+                   let uiImage = UIImage(data: imageData) {
+
+                    Image(uiImage: uiImage)
+                        .resizable()
+                        .scaledToFill()
+                        .frame(width: 50, height: 50)
+                        .clipShape(Circle())
+                        .offset(x: -10)
+
+                } else {
+                    Circle()
+                            .fill(Color.black.opacity(0.08))
+                            .frame(width: 50, height: 50)
+                            .overlay {
+
+                                if !name.isEmpty {
+
+                                    Text(String(name.prefix(1)).uppercased())
+                                        .font(.system(size: 20, weight: .bold))
+                                        .foregroundColor(.black.opacity(0.6))
+
+                                } else {
+
+                                    Image(systemName: "person.fill")
+                                        .foregroundColor(.black.opacity(0.3))
+                                }
+                            }
+                }
 
                 Spacer()
                 Text(name)
