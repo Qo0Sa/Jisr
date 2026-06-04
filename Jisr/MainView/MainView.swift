@@ -21,22 +21,23 @@ enum WaitingDestination: Hashable {
 
 struct MainView: View {
 
+    @EnvironmentObject private var layerState: LayerState
+    @Environment(\.scenePhase) private var scenePhase
+
     @State private var showRoomOptions = false
-    
+    @State private var showModelPage = false
+
     @Environment(\.modelContext) private var context
     @Query private var rooms: [Room]
-    
-    @State private var viewModel   = MainViewModel()
-   
+
+    @State private var viewModel = MainViewModel()
+
     // لتفعيل ال بوب ابس
     @State private var isShowingCreatePopup = false
     @State private var isShowingJoinPopup = false
-    
-    
-  
+
     @State private var waitingDestination: WaitingDestination? = nil
-    
-    @State private var createdRoom: Room? = nil  // ← ADD THIS
+    @State private var createdRoom: Room? = nil
     var body: some View {
         NavigationStack {
             ZStack(alignment: .topLeading) {
@@ -64,7 +65,7 @@ struct MainView: View {
                                      
                                      // اليمين
                                      Button {
-                                            // action
+                                            showModelPage = true
                                         } label: {
                                             Image(systemName: "building.2.crop.circle")
                                                 .resizable()
@@ -178,9 +179,22 @@ struct MainView: View {
                     }
                 }
             }
+            .navigationDestination(isPresented: $showModelPage) {
+                ModelPage()
+            }
             .onAppear {
-                           viewModel.loadUser(context: context)
-                       }
+                viewModel.loadUser(context: context)
+                layerState.syncWithRooms(rooms, maxLayers: 18)
+            }
+            .onChange(of: rooms) { _, newRooms in
+                layerState.syncWithRooms(newRooms, maxLayers: 18)
+            }
+            .onChange(of: scenePhase) { _, newPhase in
+                if newPhase == .active {
+                    layerState.checkWeeklyExpiry(maxLayers: 18)
+                    layerState.syncWithRooms(rooms, maxLayers: 18)
+                }
+            }
                        .navigationBarBackButtonHidden(true)
                        .confirmationDialog(
                            "Room Options",
@@ -508,5 +522,6 @@ struct ProfileAvatarView: View {
 
 #Preview {
     MainView()
+        .environmentObject(LayerState())
         .modelContainer(for: [User.self, Room.self, Photo.self], inMemory: true)
 }

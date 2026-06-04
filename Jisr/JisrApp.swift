@@ -10,9 +10,12 @@ import SwiftData
 
 @main
 struct JisrApp: App {
+    @StateObject private var layerState = LayerState()
+
     var body: some Scene {
         WindowGroup {
             SplashView()
+                .environmentObject(layerState)
         }
         .modelContainer(for: [User.self, Room.self, Photo.self])
     }
