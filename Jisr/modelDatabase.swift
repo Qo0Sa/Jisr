@@ -23,6 +23,9 @@ class User {
         self.name = name
         self.profileImage = profileImage
     }
+    //wed
+    @Relationship(deleteRule: .cascade)
+    var participations: [RoomParticipant]? = []
 }
 
 @Model
@@ -36,9 +39,10 @@ class Room {
     var isStarted: Bool = false
     var createdBy: User? = nil
     
-    // wed 
+    // wed
       var missionTitle: String = ""
       var missionDescription: String = ""
+    var isStarted: Bool = false //for not host
     
     @Relationship(deleteRule: .cascade, inverse: \Photo.room)
     var photos: [Photo]? = []
@@ -52,6 +56,9 @@ class Room {
         self.isClosed = false
         self.isStarted = false  
     }
+   //wed
+    @Relationship(deleteRule: .cascade)
+    var participants: [RoomParticipant]? = []
 }
 
 @Model
@@ -66,5 +73,22 @@ class Photo {
         self.uploadedAt = Date()
         self.room = room
         self.user = user
+    }
+}
+//wed
+@Model
+class RoomParticipant {
+
+    var joinedAt: Date = Date()
+
+    @Relationship(inverse: \User.participations)
+    var user: User?
+
+    @Relationship(inverse: \Room.participants)
+    var room: Room?
+
+    init(user: User, room: Room) {
+        self.user = user
+        self.room = room
     }
 }

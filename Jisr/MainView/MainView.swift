@@ -14,29 +14,29 @@ enum WaitingDestination: Hashable {
     case host
     case guest
     case profile
-    case camera //wed
     
     var id: Self { self } //wed
 }
 
 struct MainView: View {
 
+    @EnvironmentObject private var layerState: LayerState
+    @Environment(\.scenePhase) private var scenePhase
+
     @State private var showRoomOptions = false
-    
+    @State private var showModelPage = false
+
     @Environment(\.modelContext) private var context
     @Query private var rooms: [Room]
-    
-    @State private var viewModel   = MainViewModel()
-   
+
+    @State private var viewModel = MainViewModel()
+
     // لتفعيل ال بوب ابس
     @State private var isShowingCreatePopup = false
     @State private var isShowingJoinPopup = false
-    
-    
-  
+
     @State private var waitingDestination: WaitingDestination? = nil
-    
-    @State private var createdRoom: Room? = nil  // ← ADD THIS
+    @State private var createdRoom: Room? = nil
     var body: some View {
         NavigationStack {
             ZStack(alignment: .topLeading) {
@@ -64,7 +64,7 @@ struct MainView: View {
                                      
                                      // اليمين
                                      Button {
-                                            // action
+                                            showModelPage = true
                                         } label: {
                                             Image(systemName: "building.2.crop.circle")
                                                 .resizable()
@@ -115,9 +115,17 @@ struct MainView: View {
 
                                if isShowingJoinPopup {
                                    // ← 4. أضف onJoined
+//                                   JoinWithCodeSheet(
+//                                       isPresented: $isShowingJoinPopup,
+//                                       onJoined: {
+//                                           waitingDestination = .guest
+//                                       }
+//                                   )
+                                   //wed
                                    JoinWithCodeSheet(
                                        isPresented: $isShowingJoinPopup,
-                                       onJoined: {
+                                       onJoined: { room in
+                                           createdRoom = room
                                            waitingDestination = .guest
                                        }
                                    )
@@ -125,7 +133,7 @@ struct MainView: View {
                                }
                            }
             
-//            
+//
 //            .navigationDestination(item: $waitingDestination) { destination in
 ////                           switch destination {
 ////                           case .host:
@@ -159,28 +167,45 @@ struct MainView: View {
                     }
 
                 case .guest:
-                    WaitingRoomForNotHostView()
+                    if let room = createdRoom {
+                           WaitingRoomForNotHostView(room: room)
+                       } else {
+                           Text("Preparing room...")
+                       }
 
                 case .profile:
                     ProfileView()
 
-                case .camera:
-                    if let room = createdRoom {
-                        RoomCamera(
-                            room: room,
-                            isShowingFeed: .constant(false),
-                            onPhotoCaptured: { image in
-                                print("Captured")
-                            }
-                        )
-                    } else {
-                        Text("No room found")
+//                case .camera:
+//                    if let room = createdRoom {
+//                        RoomCamera(
+//                            room: room,
+//                            isShowingFeed: .constant(false),
+//                            onPhotoCaptured: { image in
+//                                print("Captured")
+//                            }
+//                        )
+//                    } else {
+//                        Text("No room found")
                     }
                 }
             }
+            .navigationDestination(isPresented: $showModelPage) {
+                ModelPage()
+            }
             .onAppear {
-                           viewModel.loadUser(context: context)
-                       }
+                viewModel.loadUser(context: context)
+                layerState.syncWithRooms(rooms, maxLayers: 18)
+            }
+            .onChange(of: rooms) { _, newRooms in
+                layerState.syncWithRooms(newRooms, maxLayers: 18)
+            }
+            .onChange(of: scenePhase) { _, newPhase in
+                if newPhase == .active {
+                    layerState.checkWeeklyExpiry(maxLayers: 18)
+                    layerState.syncWithRooms(rooms, maxLayers: 18)
+                }
+            }
                        .navigationBarBackButtonHidden(true)
                        .confirmationDialog(
                            "Room Options",
@@ -201,7 +226,7 @@ struct MainView: View {
                        }
                    }
                }
-           }
+//           }
 
 // MARK: - Empty State
 struct EmptyRoomsView: View {
@@ -562,5 +587,6 @@ struct ProfileAvatarView: View {
 
 #Preview {
     MainView()
+        .environmentObject(LayerState())
         .modelContainer(for: [User.self, Room.self, Photo.self], inMemory: true)
 }
