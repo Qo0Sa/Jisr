@@ -13,6 +13,7 @@ struct JisrApp: App {
     var body: some Scene {
         WindowGroup {
             SplashView()
+                .preferredColorScheme(.light)
         }
         .modelContainer(for: [User.self, Room.self, Photo.self])
     }
