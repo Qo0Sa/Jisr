@@ -1,5 +1,4 @@
 //
-//
 //  MainView.swift
 //  Jisr
 //
@@ -9,13 +8,14 @@
 import SwiftUI
 import SwiftData
 
-
 enum WaitingDestination: Hashable {
     case host
     case guest
     case profile
+    case hostGame  // wteen
+    case guestGame // wteen
     
-    var id: Self { self } //wed
+    var id: Self { self }
 }
 
 struct MainView: View {
@@ -27,16 +27,29 @@ struct MainView: View {
     @State private var showModelPage = false
 
     @Environment(\.modelContext) private var context
-    @Query private var rooms: [Room]
+    
+    // 💡 فلترة واستبعاد الغرف التاريخية المغلقة من الواجهة الرئيسية فور إنهاء الروم حياً
+    @Query(filter: #Predicate<Room> { room in
+        room.isClosed == false
+    }) private var rooms: [Room]
+    
+    @Query private var users: [User]
 
     @State private var viewModel = MainViewModel()
 
-    // لتفعيل ال بوب ابس
     @State private var isShowingCreatePopup = false
     @State private var isShowingJoinPopup = false
 
     @State private var waitingDestination: WaitingDestination? = nil
     @State private var createdRoom: Room? = nil
+    
+    private var currentUserImage: Image? {
+        if let data = users.first?.profileImage, let uiImage = UIImage(data: data) {
+            return Image(uiImage: uiImage)
+        }
+        return nil
+    }
+    
     var body: some View {
         NavigationStack {
             ZStack(alignment: .topLeading) {
@@ -44,41 +57,34 @@ struct MainView: View {
                 Color("Backgroundcolor").ignoresSafeArea()
                 
                 VStack(spacing: 0) {
-                  
                     HStack {
-                                     
-                        // MARK: - 💡 اليسار: تم تحويل البروفايل لزر تفاعلي يقود لصفحة البروفايل بالملي
-                                                Button {
-                                                    withAnimation(.easeInOut(duration: 0.2)) {
-                                                        waitingDestination = .profile
-                                                    }
-                                                } label: {
-                                                    ProfileAvatarView(
-                                                        image: viewModel.profileImage,
-                                                        name: viewModel.userName
-                                                    )
-                                                }
-                                                .buttonStyle(PlainButtonStyle()) // للحفاظ على الهوية البصرية للأفاتار بدون تلوين أزرق
+                        Button {
+                            withAnimation(.easeInOut(duration: 0.2)) {
+                                waitingDestination = .profile
+                            }
+                        } label: {
+                            ProfileAvatarView(
+                                image: currentUserImage,
+                                name: users.first?.name ?? viewModel.userName
+                            )
+                        }
+                        .buttonStyle(PlainButtonStyle())
                                                              
-                                                Spacer()
+                        Spacer()
                                      
-                                     // اليمين
-                                     Button {
-                                            showModelPage = true
-                                        } label: {
-                                            Image(systemName: "building.2.crop.circle")
-                                                .resizable()
-                                                .scaledToFit()
-                                                .frame(width: 45, height: 45)
-                                                .foregroundColor(.button)
-                                        }
-                                     
-                                 }
-                                 .padding(.horizontal, 24)
-                                 .padding(.top, 16)
+                        Button {
+                            showModelPage = true
+                        } label: {
+                            Image(systemName: "building.2.crop.circle")
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 45, height: 45)
+                                .foregroundColor(.button)
+                        }
+                    }
+                    .padding(.horizontal, 24)
+                    .padding(.top, 16)
                                  
-                    
-                    // MARK: - Empty State
                     if rooms.isEmpty {
                         EmptyRoomsView(showRoomOptions: $showRoomOptions)
                     } else {
@@ -93,15 +99,7 @@ struct MainView: View {
                     }
                 }
                 
-                
                 if isShowingCreatePopup {
-                                   // ← 3. أضف onRoomCreated
-//                                   RoomSelectionSheet(
-//                                       isPresented: $isShowingCreatePopup,
-//                                       onRoomCreated: {
-//                                           waitingDestination = .host
-//                                       }
-//                                   )
                     RoomSelectionSheet(
                         isPresented: $isShowingCreatePopup,
                         onRoomCreated: { room in
@@ -109,84 +107,51 @@ struct MainView: View {
                             waitingDestination = .host
                         }
                     )
+                    .transition(.opacity)
+                }
 
-                                   .transition(.opacity)
-                               }
-
-                               if isShowingJoinPopup {
-                                   // ← 4. أضف onJoined
-//                                   JoinWithCodeSheet(
-//                                       isPresented: $isShowingJoinPopup,
-//                                       onJoined: {
-//                                           waitingDestination = .guest
-//                                       }
-//                                   )
-                                   //wed
-                                   JoinWithCodeSheet(
-                                       isPresented: $isShowingJoinPopup,
-                                       onJoined: { room in
-                                           createdRoom = room
-                                           waitingDestination = .guest
-                                       }
-                                   )
-                                   .transition(.opacity)
-                               }
-                           }
-            
-//
-//            .navigationDestination(item: $waitingDestination) { destination in
-////                           switch destination {
-////                           case .host:
-////                               if let room = createdRoom {
-////                                   WaitingRoomView(
-////                                       waitingDestination: $waitingDestination,
-////                                       room: room
-////                                   )
-////                               } else {
-////                                   // Fallback if no room is set yet
-////                                   Text("Preparing room...")
-////                               }
-////                           case .guest:
-////                               WaitingRoomForNotHostView()
-////                           case .profile:
-////                                               ProfileView()
-////                           }
-//                       }
-            
+                if isShowingJoinPopup {
+                    JoinWithCodeSheet(
+                        isPresented: $isShowingJoinPopup,
+                        onJoined: { room in
+                            createdRoom = room
+                            waitingDestination = .guest
+                        }
+                    )
+                    .transition(.opacity)
+                }
+            }
             .navigationDestination(item: $waitingDestination) { destination in
                 switch destination {
-
                 case .host:
                     if let room = createdRoom {
-                        WaitingRoomView(
-                            waitingDestination: $waitingDestination,
-                            room: room
-                        )
+                        WaitingRoomView(waitingDestination: $waitingDestination, room: room)
                     } else {
                         Text("Preparing room...")
                     }
-
+                    
                 case .guest:
+                    // 💡 تصليح الإيرور: استدعاء كود ود الأصلي بالملي بدون تمرير waitingDestination لمنع تعارض المعاملات وطرد الخطأ
                     if let room = createdRoom {
-                           WaitingRoomForNotHostView(room: room)
-                       } else {
-                           Text("Preparing room...")
-                       }
-
+                        WaitingRoomForNotHostView(room: room)
+                    } else if let fallbackRoom = rooms.first {
+                        WaitingRoomForNotHostView(room: fallbackRoom)
+                    } else {
+                        Text("No active room joined.")
+                    }
+                    
                 case .profile:
-                    ProfileView()
-
-//                case .camera:
-//                    if let room = createdRoom {
-//                        RoomCamera(
-//                            room: room,
-//                            isShowingFeed: .constant(false),
-//                            onPhotoCaptured: { image in
-//                                print("Captured")
-//                            }
-//                        )
-//                    } else {
-//                        Text("No room found")
+                    ProfileView(waitingDestination: $waitingDestination)
+                    
+                case .hostGame:
+                    if let room = createdRoom {
+                        RoomContainer(room: room, isHost: true)
+                    }
+                case .guestGame:
+                    if let room = createdRoom {
+                        RoomContainer(room: room, isHost: false)
+                    } else if let fallbackRoom = rooms.first {
+                        RoomContainer(room: fallbackRoom, isHost: false)
                     }
                 }
             }
@@ -197,6 +162,11 @@ struct MainView: View {
                 viewModel.loadUser(context: context)
                 layerState.syncWithRooms(rooms, maxLayers: 18)
             }
+            .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("DismissRoomFlow"))) { _ in
+                withAnimation(.easeInOut(duration: 0.25)) {
+                    self.waitingDestination = nil
+                }
+            }
             .onChange(of: rooms) { _, newRooms in
                 layerState.syncWithRooms(newRooms, maxLayers: 18)
             }
@@ -206,38 +176,25 @@ struct MainView: View {
                     layerState.syncWithRooms(rooms, maxLayers: 18)
                 }
             }
-                       .navigationBarBackButtonHidden(true)
-                       .confirmationDialog(
-                           "Room Options",
-                           isPresented: $showRoomOptions,
-                           titleVisibility: .visible
-                       ) {
-                           Button("Create a Room") {
-                               withAnimation(.easeInOut(duration: 0.25)) {
-                                   isShowingCreatePopup = true
-                               }
-                           }
-                           Button("Join with Code") {
-                               withAnimation(.easeInOut(duration: 0.25)) {
-                                   isShowingJoinPopup = true
-                               }
-                           }
-                           Button("Cancel", role: .cancel) { }
-                       }
-                   }
-               }
-//           }
+            .navigationBarBackButtonHidden(true)
+            .confirmationDialog("Room Options", isPresented: $showRoomOptions, titleVisibility: .visible) {
+                Button("Create a Room") {
+                    withAnimation(.easeInOut(duration: 0.25)) { isShowingCreatePopup = true }
+                }
+                Button("Join with Code") {
+                    withAnimation(.easeInOut(duration: 0.25)) { isShowingJoinPopup = true }
+                }
+                Button("Cancel", role: .cancel) { }
+            }
+        }
+    }
+}
 
-// MARK: - Empty State
+// MARK: - Subviews
 struct EmptyRoomsView: View {
-    
     @Binding var showRoomOptions: Bool
-    
     var body: some View {
-        
         VStack(spacing: 40) {
-            
-            // No Rooms Here Yet
             Text("No Rooms Here Yet")
                 .font(.UbuntuBold(size: 24))
                 .foregroundColor(.black)
@@ -245,20 +202,12 @@ struct EmptyRoomsView: View {
                 .padding(.bottom, 40)
             
             VStack(spacing: 0) {
-                
-                // كارد 1 - فاضية
                 DashedCard { EmptyView() }
-                
-                // كارد 2 - فاضية (مع
                 DashedCard { EmptyView() }
                     .opacity(0.6)
                     .scaleEffect(x: 0.95)
-                
-                // كارد 3 - زر الإضافة
                 DashedCard {
-                    Button {
-                        showRoomOptions = true
-                    } label: {
+                    Button { showRoomOptions = true } label: {
                         Image(systemName: "plus")
                             .font(.system(size: 32, weight: .light))
                             .foregroundColor(.black)
@@ -274,309 +223,85 @@ struct EmptyRoomsView: View {
     }
 }
 
-// MARK: - الكارد الـ Dashed
 struct DashedCard<Content: View>: View {
-
     @ViewBuilder var content: Content
-
     var body: some View {
-
         ZStack {
-
-            // Layer 3
-            RoundedRectangle(cornerRadius: 28)
-                .fill(Color("Backgroundcolor"))
-                .frame(height: 150)
-                .offset(y: 18)
-                .scaleEffect(0.92)
-                .shadow(
-                    color: .black.opacity(0.04),
-                    radius: 10,
-                    y: 8
-                )
-
-            // Layer 2
-            RoundedRectangle(cornerRadius: 28)
-                .fill(Color("Backgroundcolor"))
-                .frame(height: 150)
-                .offset(y: 9)
-                .scaleEffect(0.96)
-                .shadow(
-                    color: .black.opacity(0.05),
-                    radius: 12,
-                    y: 6
-                )
-
-            // Main Card
-            RoundedRectangle(cornerRadius: 28)
-                .fill(Color("Backgroundcolor"))
-                .frame(height: 150)
-                .overlay {
-                    RoundedRectangle(cornerRadius: 28)
-                        .strokeBorder(
-                            style: StrokeStyle(
-                                lineWidth: 2.5,
-                                dash: [10, 6]
-                            )
-                        )
-                        .foregroundColor(.black.opacity(0.65))
-                }
-                .shadow(
-                    color: .black.opacity(0.08),
-                    radius: 18,
-                    y: 10
-                )
-                .rotation3DEffect(
-                    .degrees(5),
-                    axis: (x: 1, y: 0, z: 0)
-                )
-
+            RoundedRectangle(cornerRadius: 28).fill(Color("Backgroundcolor")).frame(height: 150).offset(y: 18).scaleEffect(0.92).shadow(color: .black.opacity(0.04), radius: 10, y: 8)
+            RoundedRectangle(cornerRadius: 28).fill(Color("Backgroundcolor")).frame(height: 150).offset(y: 9).scaleEffect(0.96).shadow(color: .black.opacity(0.05), radius: 12, y: 6)
+            RoundedRectangle(cornerRadius: 28).fill(Color("Backgroundcolor")).frame(height: 150)
+                .overlay { RoundedRectangle(cornerRadius: 28).strokeBorder(style: StrokeStyle(lineWidth: 2.5, dash: [10, 6])).foregroundColor(.black.opacity(0.65)) }
+                .shadow(color: .black.opacity(0.08), radius: 18, y: 10).rotation3DEffect(.degrees(5), axis: (x: 1, y: 0, z: 0))
             content
-        }
-        .padding(.vertical, -18)
+        }.padding(.vertical, -18)
     }
 }
 
-// MARK: - لما يكون في رومات
 struct RoomsListView: View {
-
     let rooms: [Room]
     @Binding var showRoomOptions: Bool
-
     var body: some View {
-
         ScrollView(showsIndicators: false) {
-            VStack(spacing: -40) {  // ← spacing سالب عشان يتغطى
-                
-                ForEach(Array(rooms.enumerated()), id: \.element.id) { index, room in
-                    RoomCardView(room: room)
-                        .zIndex(Double(index))  // ← الأول فوق
-                }
-                
+            VStack(spacing: 16) {
+                ForEach(rooms) { room in RoomCardView(room: room) }
                 DashedCard {
-                    Button {
-                        showRoomOptions = true
-                    } label: {
-                        Image(systemName: "plus")
-                            .font(.system(size: 32, weight: .light))
-                            .foregroundColor(.black)
-                    }
-                }
-                .padding(.horizontal, 20)
-                .opacity(0.6)
-                .zIndex(Double(rooms.count + 1))
-            }
-            .padding(.horizontal, 24)
-            .padding(.top, 40)
+                    Button { showRoomOptions = true } label: { Image(systemName: "plus").font(.system(size: 25, weight: .light)) }
+                }.opacity(0.6)
+            }.padding(.horizontal, 24).padding(.top, 40)
         }
     }
 }
-// MARK: - كارد الروم
-struct RoomCardView: View {
-    
-    let room: Room
 
-    var categoryIconColor: Color {
-        guard room.isStarted else {
-            return Color(.systemGray3)
-        }
-        
-        switch room.category {
-        case "Cognitive":
-            return Color("conicon")
-        case "Creative":
-            return Color("cricon")
-        default:
-            return Color("phicon")
-        }
-    }
-    
+struct RoomCardView: View {
+    let room: Room
     var cardColor: Color {
-        guard room.isStarted else {
-            return Color(.systemGray4)  // ← رمادي لو ما بدأت
-        }
-        
         switch room.category {
-        case "Cognitive":
-            return Color("cognitiveColor")
-        case "Creative":
-            return Color("creativeColor")
-        default:
-            return Color("physicalColor")
+        case "Cognitive": return Color("cognitiveColor")
+        case "Creative": return Color("creativeColor")
+        default: return Color("physicalColor")
         }
     }
-    
     var categoryIcons: [String] {
         switch room.category {
-        case "Cognitive":
-            return ["books.vertical.fill", "graduationcap.fill", "puzzlepiece.fill"]
-
-        case "Creative":
-            return ["paintpalette.fill", "music.note", "camera.fill"]
-
-        default:
-            return ["figure.run", "leaf.fill", "soccerball"]
+        case "Cognitive": return ["books.vertical.fill", "graduationcap.fill"]
+        case "Creative": return ["paintpalette.fill", "music.note", "camera.fill"]
+        default: return ["figure.run", "leaf.fill"]
         }
     }
-
     var body: some View {
-
         ZStack {
-       
-
-                // Layer 3
-                RoundedRectangle(cornerRadius: 28)
-                    .fill(Color(cardColor))
-                    .frame(width: 333, height: 186)
-                    .offset(y: 10)
-                    .scaleEffect(0.92)
-                    .shadow(
-                        color: .black.opacity(0.04),
-                        radius: 10,
-                        y: 8
-                    )
-            // Layer 3
-//            RoundedRectangle(cornerRadius: 16)
-//                .fill(cardColor)
-//                .frame(height: 150)
-            
-            
-            // Layer 2
-            RoundedRectangle(cornerRadius: 28)
-                .fill(Color(cardColor))
-                .frame(width: 333, height: 186)
-                .offset(y: 9)
-                .scaleEffect(0.96)
-                .shadow(
-                    color: .black.opacity(0.05),
-                    radius: 12,
-                    y: 6
-                )
-
-            // Main Card
-            RoundedRectangle(cornerRadius: 28)
-                .fill(Color(cardColor))
-                .frame(width: 333, height: 186)
-                .overlay(alignment: .topLeading) {
-
-                    
-                   
-                   
-                }
-                .shadow(
-                    color: .black.opacity(0.08),
-                    radius: 18,
-                    y: 10
-                )
-                .rotation3DEffect(
-                    .degrees(5),
-                    axis: (x: 1, y: 0, z: 0)
-                )
-            
+            RoundedRectangle(cornerRadius: 28).fill(cardColor).frame(height: 150).offset(y: 18).scaleEffect(0.92).shadow(color: .black.opacity(0.04), radius: 10, y: 8)
+            RoundedRectangle(cornerRadius: 28).fill(cardColor).frame(height: 150).offset(y: 9).scaleEffect(0.96).shadow(color: .black.opacity(0.05), radius: 12, y: 6)
+            RoundedRectangle(cornerRadius: 28).fill(cardColor).frame(height: 150)
+                .overlay { RoundedRectangle(cornerRadius: 28).strokeBorder(style: StrokeStyle(lineWidth: 2.5, dash: [10, 6])).foregroundColor(.black.opacity(0.65)) }
+                .shadow(color: .black.opacity(0.08), radius: 18, y: 10).rotation3DEffect(.degrees(5), axis: (x: 1, y: 0, z: 0))
                 .overlay {
-                    VStack(alignment: .leading) {
-                        
-                        // ← اسم الروم + صورة الهوست في الزاوية العلوية اليسرى
-                        HStack(spacing: 8) {
-                            // صورة الهوست
-                            if let imageData = room.createdBy?.profileImage,
-                               let uiImage = UIImage(data: imageData) {
-                                Image(uiImage: uiImage)
-                                    .resizable()
-                                    .scaledToFill()
-                                    .frame(width: 38, height: 38)
-                                    .clipShape(Circle())
-                            } else {
-                                Circle()
-                                    .fill(Color.white.opacity(0.4))
-                                    .frame(width: 38, height: 38)
-                                    .overlay {
-                                        Image(systemName: "person.fill")
-                                            .foregroundColor(.white.opacity(0.8))
-                                    }
-                            }
-                            
-                            // اسم الروم
-                            Text(room.name)
-                                .font(.UbuntuBold(size: 22))
-                                .foregroundColor(room.isStarted ? .button : .button)
+                    HStack(spacing: -10) {
+                        ForEach(categoryIcons, id: \.self) { icon in
+                            Image(systemName: icon).font(.system(size: 65, weight: .bold)).foregroundColor(.white.opacity(0.14)).rotationEffect(.degrees(-10))
                         }
-                        .padding(14)
-                        
-                        Spacer()
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    
-                    // الأيقونات في الخلفية
-                    VStack(spacing: -15) {
-                        // صفين أيقونتين فوق
-                        HStack(spacing: -10) {
-                            ForEach(categoryIcons.prefix(2), id: \.self) { icon in
-                                Image(systemName: icon)
-                                    .font(.system(size: 55, weight: .bold))
-                                    .foregroundColor(categoryIconColor)
-                                    .rotationEffect(.degrees(-10))
-                            }
-                        }
-                        
-                        // الأيقونة الثالثة في المنتصف
-                        if categoryIcons.count > 2 {
-                            Image(systemName: categoryIcons[2])
-                                .font(.system(size: 55, weight: .bold))
-                                .foregroundColor(categoryIconColor)
-                                .rotationEffect(.degrees(-10))
-                        }
-                    }
-                    .frame(maxWidth: .infinity, alignment: .trailing)
-                    .padding(.trailing, 10)                }
-
-                .shadow(
-                    color: cardColor.opacity(0.35),
-                    radius: 18,
-                    y: 10
-                )
-                .rotation3DEffect(
-                    .degrees(5),
-                    axis: (x: 1, y: 0, z: 0)
-                )
-        }
-        .padding(.vertical, 0)
-        
+                    }.frame(maxWidth: .infinity, alignment: .trailing).padding(.trailing, 10)
+                }.shadow(color: cardColor.opacity(0.35), radius: 18, y: 10).rotation3DEffect(.degrees(5), axis: (x: 1, y: 0, z: 0))
+        }.padding(.vertical, 0)
     }
 }
 
-    
-// MARK: - صورة البروفايل الأصلية
 struct ProfileAvatarView: View {
     let image: Image?
     let name: String
-    
     var body: some View {
         ZStack {
-            Circle()
-                .fill(Color.black.opacity(0.08))
-                .frame(width: 52, height: 52)
-            
+            Circle().fill(Color.black.opacity(0.08)).frame(width: 52, height: 52)
             if let image {
-                image
-                    .resizable()
-                    .scaledToFill()
-                    .frame(width: 52, height: 52)
-                    .clipShape(Circle())
+                image.resizable().scaledToFill().frame(width: 52, height: 52).clipShape(Circle())
             } else if !name.isEmpty {
-                Text(String(name.prefix(1)).uppercased())
-                    .font(.system(size: 22, weight: .bold))
-                    .foregroundColor(.black.opacity(0.6))
+                Text(String(name.prefix(1)).uppercased()).font(.system(size: 22, weight: .bold)).foregroundColor(.black.opacity(0.6))
             } else {
-                Image(systemName: "person.fill")
-                    .foregroundColor(.black.opacity(0.3))
+                Image(systemName: "person.fill").foregroundColor(.black.opacity(0.3))
             }
         }
     }
 }
-
-
-
 
 #Preview {
     MainView()

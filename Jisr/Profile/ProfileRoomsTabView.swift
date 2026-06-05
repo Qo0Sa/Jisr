@@ -11,53 +11,83 @@ import SwiftData
 
 struct ProfileRoomsTabView: View {
     let selectedCategory: String
-    
-    // جلب الغرف التاريخية من SwiftData لفحصها
     @Query private var allRooms: [Room]
     
-    // تصفية الغرف حسب الفئة
+    // 💡 جلب الرومات التاريخية المغلقة والتبديل المباشر بناءً على الـ selectedCategory
     var filteredRooms: [Room] {
+        let closedRooms = allRooms.filter { $0.isClosed }
+        
         if selectedCategory == "All" {
-            return allRooms
+            return closedRooms
         }
-        return allRooms.filter { $0.category == selectedCategory }
+        return closedRooms.filter { $0.category == selectedCategory }
     }
     
     var body: some View {
         Group {
             if filteredRooms.isEmpty {
-                // MARK: - الـ Empty State للمستخدم الجديد (Rooms)
                 VStack(spacing: 16) {
                     Spacer().frame(height: 60)
-                    
-                    // أيقونة تدل على الأرشيف أو الغرف التاريخية المغلقة
                     Image(systemName: "archivebox.fill")
                         .font(.system(size: 56))
                         .foregroundColor(.black.opacity(0.15))
                     
                     VStack(spacing: 6) {
-                        Text("No active history yet")
+                        Text("No history yet")
                             .font(.UbuntuBold(size: 18))
                             .foregroundColor(.black.opacity(0.6))
-                        
                         Text("Your completed rooms and interactions\nwill appear here.")
                             .font(.Ubuntu(size: 14))
                             .foregroundColor(.black.opacity(0.4))
                             .multilineTextAlignment(.center)
-                            .lineSpacing(4)
                     }
-                    
                     Spacer()
                 }
                 .padding(.horizontal, 24)
             } else {
-                // MARK: - مكدس الرومات المتراكمة المائلة (Perspective Stack)
-                VStack(spacing: -45) {
-                    ForEach(filteredRooms, id: \.id) { room in
-                        // كود الروم المائل المتفاعل التابع لكم
+                ScrollView(.vertical, showsIndicators: false) {
+                    VStack(spacing: -42) {
+                        // 💡 استخدام الـ persistentModelID كمعرّف ثابت لحفظ استقرار الـ ForEach ومنع الـ Conflicts
+                        ForEach(Array(filteredRooms.enumerated()), id: \.element.persistentModelID) { index, room in
+                            let cardColor = room.category == "Cognitive" ? Color("cognitiveColor") : (room.category == "Creative" ? Color("creativeColor") : Color("physicalColor"))
+                            
+                            ZStack(alignment: .topLeading) {
+                                RoundedRectangle(cornerRadius: 28)
+                                    .fill(cardColor)
+                                    .frame(height: 150)
+                                    .overlay {
+                                        RoundedRectangle(cornerRadius: 28)
+                                            .strokeBorder(style: StrokeStyle(lineWidth: 2.5, dash: [10, 6]))
+                                            .foregroundColor(.black.opacity(0.5))
+                                    }
+                                
+                                HStack(alignment: .center) {
+                                    HStack(spacing: 12) {
+                                        Circle()
+                                            .fill(Color.white.opacity(0.25))
+                                            .frame(width: 38, height: 38)
+                                            .overlay {
+                                                Image(systemName: "person.fill")
+                                                    .foregroundColor(.white)
+                                                    .font(.system(size: 16))
+                                            }
+                                        Text(room.name)
+                                            .font(.UbuntuBold(size: 18))
+                                            .foregroundColor(.white)
+                                            .lineLimit(1)
+                                    }
+                                    Spacer()
+                                }
+                                .padding(20)
+                            }
+                            .shadow(color: .black.opacity(0.06), radius: 10, y: 6)
+                            .rotationEffect(.degrees(index % 2 == 0 ? -3 : 3)) // وزنية تأثير الحواف المتأرجحة لفيجما
+                            .zIndex(Double(filteredRooms.count - index))
+                        }
                     }
+                    .padding(.top, 20)
+                    .padding(.bottom, 32)
                 }
-                .padding(.top, 40)
             }
         }
     }
@@ -66,6 +96,6 @@ struct ProfileRoomsTabView: View {
 #Preview {
     ZStack {
         Color("Backgroundcolor").ignoresSafeArea()
-        ProfileRoomsTabView(selectedCategory: "Creative")
+        ProfileRoomsTabView(selectedCategory: "All")
     }
 }

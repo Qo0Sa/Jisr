@@ -2,7 +2,6 @@
 
 
 
-
 //
 //  ProfilePhotosTabView.swift
 //  Jisr
@@ -16,15 +15,21 @@ import SwiftData
 struct ProfilePhotosTabView: View {
     let selectedCategory: String
     
-    // جلب الصور الفعلية من SwiftData لفحص ما إذا كان المستخدم جديداً
+    @Query private var users: [User]
     @Query private var allPhotos: [Photo]
     
-    // تصفية الصور بناءً على الكاتيجوري المحدد
+    // 💡 الفلترة المباشرة المعتمدة على المقارنة بالـ selectedCategory وعرض الكل عند اختيار All
     var filteredPhotos: [Photo] {
+        guard let currentUser = users.first else { return [] }
+        
+        let userSpecificPhotos = allPhotos
+            .filter { $0.user?.name == currentUser.name }
+            .sorted(by: { $0.uploadedAt > $1.uploadedAt })
+        
         if selectedCategory == "All" {
-            return allPhotos
+            return userSpecificPhotos
         }
-        return allPhotos.filter { $0.room?.category == selectedCategory }
+        return userSpecificPhotos.filter { $0.room?.category == selectedCategory }
     }
     
     let columns = [
@@ -36,11 +41,8 @@ struct ProfilePhotosTabView: View {
     var body: some View {
         Group {
             if filteredPhotos.isEmpty {
-                // MARK: - الـ Empty State للمستخدم الجديد (Photos)
                 VStack(spacing: 16) {
                     Spacer().frame(height: 60)
-                    
-                    // أيقونة البوم أو كاميرا بشكل دافئ
                     Image(systemName: "photo.on.rectangle.angled")
                         .font(.system(size: 56))
                         .foregroundColor(.black.opacity(0.15))
@@ -49,24 +51,31 @@ struct ProfilePhotosTabView: View {
                         Text("No photos captured yet")
                             .font(.UbuntuBold(size: 18))
                             .foregroundColor(.black.opacity(0.6))
-                        
                         Text("Every moment you document inside a room\nwill appear here.")
                             .font(.Ubuntu(size: 14))
                             .foregroundColor(.black.opacity(0.4))
                             .multilineTextAlignment(.center)
-                            .lineSpacing(4)
                     }
-                    
                     Spacer()
                 }
                 .padding(.horizontal, 24)
             } else {
-                // MARK: - شبكة الصور المعتادة مع ميزة التاريخ المثبت (Sticky Headers)
                 ScrollView(.vertical, showsIndicators: false) {
-                    LazyVGrid(columns: columns, spacing: 12, pinnedViews: [.sectionHeaders]) {
-                        // هنا يتم تقسيم الصور الفعلية بناءً على تواريخها
-                        // (تم الإبقاء على الهيكل لتنظيم الكود مستقبلاً عند ربطه بالـ Data)
+                    LazyVGrid(columns: columns, spacing: 12) {
+                        ForEach(filteredPhotos, id: \.self) { photo in
+                            ZStack {
+                                RoundedRectangle(cornerRadius: 16)
+                                    .fill(Color.black.opacity(0.04))
+                                    .aspectRatio(1.0, contentMode: .fit)
+                                    .overlay {
+                                        Image(systemName: "photo.fill")
+                                            .font(.system(size: 24))
+                                            .foregroundColor(.black.opacity(0.08))
+                                    }
+                            }
+                        }
                     }
+                    .padding(.top, 10)
                 }
             }
         }
@@ -76,6 +85,6 @@ struct ProfilePhotosTabView: View {
 #Preview {
     ZStack {
         Color("Backgroundcolor").ignoresSafeArea()
-        ProfilePhotosTabView(selectedCategory: "Creative")
+        ProfilePhotosTabView(selectedCategory: "All")
     }
 }

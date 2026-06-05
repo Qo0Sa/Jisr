@@ -36,7 +36,11 @@ class UserViewModel {
     func saveUser(context: ModelContext) {
         let user = User(name: name, profileImage: profileImageData)
         context.insert(user)
-        print("✅ User saved: \(user.name)")
-        print("✅ Image: \(profileImageData != nil ? "موجودة" : "ما فيها صورة")")
+        do {
+                    try context.save()
+                    print("✅ User saved and context synced: \(user.name)")
+                } catch {
+                    print("❌ Failed to save context: \(error.localizedDescription)")
+                }
     }
 }

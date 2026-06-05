@@ -10,48 +10,37 @@ import SwiftData
 import PhotosUI
 
 struct NameView: View {
-    
     @Environment(\.modelContext) private var context
-    
     @State private var viewModel = UserViewModel()
     @State private var goToMain = false
     @State private var showError = false
     
+    // 💡 تفعيل علامة التسجيل لقطع مسار الأونبوردنق فور الانتقال للمين
+    @AppStorage("hasRegistered") private var hasRegistered: Bool = false
+    
     var body: some View {
-        
         NavigationStack {
-            
             VStack(spacing: 24) {
-                
                 Spacer().frame(height: 60)
                 
-                // MARK: - Profile Image
                 PhotosPicker(selection: $viewModel.selectedPhoto, matching: .images) {
-                    
                     ZStack {
-                        
                         Circle()
                             .fill(Color.black.opacity(0.08))
                             .frame(width: 188, height: 188)
                         
                         if let image = viewModel.profileImage {
-                            
                             image
                                 .resizable()
                                 .scaledToFill()
                                 .frame(width: 188, height: 188)
                                 .clipShape(Circle())
-                            
                         } else {
-                            
                             if viewModel.name.isEmpty {
-                                
                                 Image(systemName: "person.fill")
                                     .font(.system(size: 60))
                                     .foregroundColor(.black.opacity(0.3))
-                                
                             } else {
-                                
                                 Text(String(viewModel.name.prefix(1)).uppercased())
                                     .font(.system(size: 70, weight: .bold))
                                     .foregroundColor(.black.opacity(0.6))
@@ -61,10 +50,7 @@ struct NameView: View {
                         Circle()
                             .fill(Color.black)
                             .frame(width: 42, height: 42)
-                            .overlay {
-                                Image(systemName: "plus")
-                                    .foregroundColor(.white)
-                            }
+                            .overlay { Image(systemName: "plus").foregroundColor(.white) }
                             .offset(x: 60, y: 60)
                     }
                 }
@@ -72,9 +58,7 @@ struct NameView: View {
                     Task { await viewModel.loadImage() }
                 }
                 
-                // MARK: - Name Field
                 VStack(alignment: .leading, spacing: 8) {
-                    
                     Text("Write your name")
                         .font(.UbuntuBold(size: 20))
                         .foregroundColor(.button)
@@ -85,7 +69,6 @@ struct NameView: View {
                         .clipShape(RoundedRectangle(cornerRadius: 16))
                     
                     if showError && viewModel.name.isEmpty {
-                        
                         Text("Please enter your name")
                             .font(.caption)
                             .foregroundColor(.red)
@@ -96,20 +79,20 @@ struct NameView: View {
                 
                 Spacer()
                 
-                // MARK: - Button
                 Button {
-                    
                     if viewModel.name.isEmpty {
                         showError = true
                     } else {
                         showError = false
-                        
                         viewModel.saveUser(context: context)
+                        
+                        // 💡 تفعيل الدخول الثابت وحفظ البيانات وتأكيده فورياً
+                        hasRegistered = true
+                        try? context.save()
+                        
                         goToMain = true
                     }
-                    
                 } label: {
-                    
                     Text("Next")
                         .font(.UbuntuBold(size: 20))
                         .foregroundColor(.white)
@@ -117,7 +100,6 @@ struct NameView: View {
                         .background(Color.black)
                         .clipShape(RoundedRectangle(cornerRadius: 99))
                 }
-                
                 Spacer()
             }
             .navigationBarBackButtonHidden(true)
@@ -128,7 +110,6 @@ struct NameView: View {
         }
     }
 }
-
 
 #Preview {
     ContentView()

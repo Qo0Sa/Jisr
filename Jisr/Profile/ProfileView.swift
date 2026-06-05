@@ -17,21 +17,22 @@ struct ProfileView: View {
     @Environment(\.modelContext) private var context
     @Environment(\.dismiss) private var dismiss
     
+    // 💡 تفعيل الاستقبال: استقبال الـ Binding من الماين فيو لتصفير المسار فوراً والرجوع للجذر بسلامة
+    @Binding var waitingDestination: WaitingDestination?
+    
     @Query private var users: [User]
     
     @State private var selectedTab: String = "Photos"
-    @State private var selectedCategory: String = "Creative"
+    @State private var selectedCategory: String = "All"
     
     @State private var isEditingName = false
     @State private var newName: String = ""
-    
     @State private var selectedPhotoItem: PhotosPickerItem? = nil
     
-    var currentUser: User? {
-        users.first
-    }
+    var currentUser: User? { users.first }
     
     let categoryFilters = [
+        (name: "All", icon: "square.grid.2x2.fill", color: "buttonColor"),
         (name: "Physical", icon: "figure.run", color: "physicalColor"),
         (name: "Cognitive", icon: "book.closed.fill", color: "cognitiveColor"),
         (name: "Creative", icon: "paintpalette.fill", color: "creativeColor")
@@ -40,10 +41,15 @@ struct ProfileView: View {
     var body: some View {
         ZStack {
             VStack(spacing: 0) {
-                
-                // MARK: - الهيدر العلوي
                 HStack {
-                    Button(action: { dismiss() }) {
+                    Button(action: {
+                        try? context.save()
+                        if waitingDestination != nil {
+                            waitingDestination = nil // تصفير المسار للعودة المباشرة للمين فيو وتجنب الأونبوردنق
+                        } else {
+                            dismiss()
+                        }
+                    }) {
                         Image(systemName: "chevron.left")
                             .font(.system(size: 22, weight: .bold))
                             .foregroundColor(.black)
@@ -54,7 +60,6 @@ struct ProfileView: View {
                 .padding(.horizontal, 24)
                 .padding(.top, 16)
                 
-                // MARK: - معلومات المستخدم
                 VStack(spacing: 12) {
                     ZStack {
                         Circle()
@@ -74,50 +79,34 @@ struct ProfileView: View {
                         }
                     }
                     .overlay(alignment: .bottomTrailing) {
-                                            PhotosPicker(selection: $selectedPhotoItem, matching: .images, photoLibrary: .shared()) {
-                                                ZStack {
-                                                    Circle()
-                                                        .fill(Color("buttonColor"))
-                                                        .frame(width: 23, height: 23)
-                                                        .overlay(
-                                                            Circle().stroke(Color.white, lineWidth: 1.5)
-                                                        )
-                                                    
-                                                    Image(systemName: "plus")
-                                                        .font(.system(size: 12, weight: .medium))
-                                                        .foregroundColor(.white)
-                                                }
-                                            }
-                                            .offset(x: 0, y: 0)
-                                        }
-                                        // 💡 4. saving in swiftdata
-                                        .onChange(of: selectedPhotoItem) { _, newValue in
-                                            Task {
-                                            
-                                                if let data = try? await newValue?.loadTransferable(type: Data.self) {
-                                                    if let user = currentUser {
-                                                        user.profileImage = data
-                                                        try? context.save()
-                                                    }
-                                                }
-                                            }
-                                        }
+                        PhotosPicker(selection: $selectedPhotoItem, matching: .images, photoLibrary: .shared()) {
+                            ZStack {
+                                Circle()
+                                    .fill(Color("buttonColor"))
+                                    .frame(width: 23, height: 23)
+                                    .overlay(Circle().stroke(Color.white, lineWidth: 1.5))
+                                Image(systemName: "plus").font(.system(size: 12, weight: .medium)).foregroundColor(.white)
+                            }
+                        }
+                    }
+                    .onChange(of: selectedPhotoItem) { _, newValue in
+                        Task {
+                            if let data = try? await newValue?.loadTransferable(type: Data.self) {
+                                if let user = currentUser {
+                                    user.profileImage = data
+                                    try? context.save()
+                                }
+                            }
+                        }
+                    }
                     
-                    // 💡 button
                     Button(action: {
                         newName = currentUser?.name ?? "myname"
-                        withAnimation(.easeInOut(duration: 0.2)) {
-                            isEditingName = true
-                        }
+                        withAnimation(.easeInOut(duration: 0.2)) { isEditingName = true }
                     }) {
                         HStack(spacing: 8) {
-                            Text(currentUser?.name ?? "myname")
-                                .font(.UbuntuBold(size: 24))
-                                .foregroundColor(.black)
-                            
-                            Image(systemName: "pencil")
-                                .font(.system(size: 18))
-                                .foregroundColor(.black.opacity(0.6))
+                            Text(currentUser?.name ?? "myname").font(.UbuntuBold(size: 24)).foregroundColor(.black)
+                            Image(systemName: "pencil").font(.system(size: 18)).foregroundColor(.black.opacity(0.6))
                         }
                     }
                     .buttonStyle(PlainButtonStyle())
@@ -125,15 +114,12 @@ struct ProfileView: View {
                 .padding(.top, 10)
                 
                 HStack {
-                    Text("History")
-                        .font(.UbuntuBold(size: 20))
-                        .foregroundColor(.black)
+                    Text("History").font(.UbuntuBold(size: 20)).foregroundColor(.black)
                     Spacer()
                 }
                 .padding(.horizontal, 24)
                 .padding(.top, 24)
                 
-                // MARK: - (Photos / Rooms)
                 HStack(spacing: 0) {
                     Button(action: { selectedTab = "Photos" }) {
                         Text("Photos")
@@ -143,11 +129,9 @@ struct ProfileView: View {
                             .background(selectedTab == "Photos" ? Color.black.opacity(0.8) : Color.clear)
                             .clipShape(RoundedRectangle(cornerRadius: 99))
                     }
-                    
                     Button(action: { selectedTab = "Rooms" }) {
                         HStack(spacing: 6) {
-                            Image(systemName: "archivebox.fill")
-                                .font(.system(size: 14))
+                            Image(systemName: "archivebox.fill").font(.system(size: 14))
                             Text("Rooms")
                         }
                         .font(.UbuntuBold(size: 16))
@@ -164,41 +148,31 @@ struct ProfileView: View {
                 .padding(.horizontal, 24)
                 .padding(.top, 12)
                 
-                // MARK: - categories
-                HStack(spacing: 12) {
-                    ForEach(categoryFilters, id: \.name) { filter in
-                        Button(action: {
-                            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                                selectedCategory = filter.name
-                            }
-                        }) {
-                            HStack(spacing: 8) {
-                                Image(systemName: filter.icon)
-                                    .font(.system(size: 18, weight: .medium))
-                                
-                                if selectedCategory == filter.name {
-                                    Text(filter.name)
-                                        .font(.UbuntuBold(size: 14))
-                                        .transition(.opacity.combined(with: .move(edge: .leading)))
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 12) {
+                        ForEach(categoryFilters, id: \.name) { filter in
+                            Button(action: {
+                                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) { selectedCategory = filter.name }
+                            }) {
+                                HStack(spacing: 8) {
+                                    Image(systemName: filter.icon).font(.system(size: 18, weight: .medium))
+                                    if selectedCategory == filter.name {
+                                        Text(filter.name).font(.UbuntuBold(size: 14)).transition(.opacity.combined(with: .move(edge: .leading)))
+                                    }
                                 }
+                                .padding(.horizontal, selectedCategory == filter.name ? 16 : 12)
+                                .frame(height: 44)
+                                .background(Color(filter.color))                                .foregroundColor(selectedCategory == filter.name ? .white : .white)
+                                .clipShape(RoundedRectangle(cornerRadius: 99))
                             }
-                            .padding(.horizontal, selectedCategory == filter.name ? 16 : 12)
-                            .frame(height: 44)
-                            .background(Color(filter.color))
-                            .foregroundColor(.white)
-                            .clipShape(RoundedRectangle(cornerRadius: 99))
                         }
                     }
-                    Spacer()
+                    .padding(.horizontal, 24)
                 }
-                .padding(.horizontal, 24)
                 .padding(.top, 20)
                 
-                Divider()
-                    .padding(.horizontal, 24)
-                    .padding(.top, 16)
+                Divider().padding(.horizontal, 24).padding(.top, 16)
                 
-                // MARK: - calling supviews (tap)
                 ScrollView(.vertical, showsIndicators: false) {
                     VStack {
                         if selectedTab == "Photos" {
@@ -207,84 +181,47 @@ struct ProfileView: View {
                             ProfileRoomsTabView(selectedCategory: selectedCategory)
                         }
                     }
-                    .padding(.horizontal, 24)
                     .padding(.bottom, 32)
                 }
             }
             .background(Color("Backgroundcolor").ignoresSafeArea())
             .navigationBarBackButtonHidden(true)
             
-            // MARK: - 💡 (Custom Edit Popup)
             if isEditingName {
                 ZStack {
-                    Color.black.opacity(0.3)
-                        .ignoresSafeArea()
-                        .onTapGesture { isEditingName = false }
-                    
-                
+                    Color.black.opacity(0.3).ignoresSafeArea().onTapGesture { isEditingName = false }
                     VStack(spacing: 20) {
-                        Text("Edit Name")
-                            .font(.UbuntuBold(size: 20))
-                            .foregroundColor(.black)
-                        
+                        Text("Edit Name").font(.UbuntuBold(size: 20)).foregroundColor(.black)
                         TextField("Enter your name", text: $newName)
-                            .font(.Ubuntu(size: 16))
-                            .padding()
-                            .frame(height: 50)
-                            .background(Color("fieldColor"))
-                            .clipShape(RoundedRectangle(cornerRadius: 14))
-                            .autocorrectionDisabled()
-                        
+                            .font(.Ubuntu(size: 16)).padding().frame(height: 50)
+                            .background(Color("fieldColor")).clipShape(RoundedRectangle(cornerRadius: 14)).autocorrectionDisabled()
                         HStack(spacing: 12) {
-                            // cancel
                             Button(action: { isEditingName = false }) {
-                                Text("Cancel")
-                                    .font(.UbuntuBold(size: 16))
-                                    .foregroundColor(.gray)
-                                    .frame(maxWidth: .infinity)
-                                    .frame(height: 46)
-                                    .background(Color.black.opacity(0.05))
-                                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                                Text("Cancel").font(.UbuntuBold(size: 16)).foregroundColor(.gray)
+                                    .frame(maxWidth: .infinity).frame(height: 46).background(Color.black.opacity(0.05)).clipShape(RoundedRectangle(cornerRadius: 12))
                             }
-                            
-                            // saving name
                             Button(action: saveNameAction) {
-                                Text("Save")
-                                    .font(.UbuntuBold(size: 16))
-                                    .foregroundColor(.white)
-                                    .frame(maxWidth: .infinity)
-                                    .frame(height: 46)
-                                    .background(newName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? Color("buttonColor").opacity(0.5) : Color("buttonColor"))
-                                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                                Text("Save").font(.UbuntuBold(size: 16)).foregroundColor(.white)
+                                    .frame(maxWidth: .infinity).frame(height: 46).background(newName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? Color("buttonColor").opacity(0.5) : Color("buttonColor")).clipShape(RoundedRectangle(cornerRadius: 12))
                             }
                             .disabled(newName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                         }
                     }
-                    .padding(24)
-                    .background(Color.white)
-                    .clipShape(RoundedRectangle(cornerRadius: 24))
-                    .padding(.horizontal, 36)
-                    .shadow(color: .black.opacity(0.15), radius: 20, x: 0, y: 10)
+                    .padding(24).background(Color.white).clipShape(RoundedRectangle(cornerRadius: 24)).padding(.horizontal, 36).shadow(color: .black.opacity(0.15), radius: 20, x: 0, y: 10)
                 }
                 .transition(.opacity)
             }
         }
     }
     
-    // 💡 saving in swiftdata
-
     private func saveNameAction() {
-        if let user = currentUser {
-            user.name = newName
-            try? context.save()
-        }
-        withAnimation(.easeInOut(duration: 0.2)) {
-            isEditingName = false
-        }
+        if let user = currentUser { user.name = newName; try? context.save() }
+        withAnimation(.easeInOut(duration: 0.2)) { isEditingName = false }
     }
 }
 
+// 💡 تمرير الـ Binding التجريبي الثابت للحفاظ على استقرار الـ Canvas وتأمين الـ Build
 #Preview {
-    ProfileView()
+    ProfileView(waitingDestination: .constant(.profile))
         .modelContainer(for: [User.self, Room.self, Photo.self], inMemory: true)
 }
