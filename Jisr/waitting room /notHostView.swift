@@ -15,6 +15,7 @@ struct WaitingRoomForNotHostView: View {
     
     @State private var goToCamera = false
     
+    @State private var goToMain = false
     var body: some View {
         ZStack(alignment: .bottom) { // جعل العناصر تترتب فوق بعضها
             
@@ -33,7 +34,10 @@ struct WaitingRoomForNotHostView: View {
                     
                     // الهيدر
                     HStack {
-                        Button(action: {}) {
+                        Button(action: {
+                            goToMain = true
+
+                        }) {
                             Image(systemName: "chevron.left")
                                 .font(.system(size: 24, weight: .bold))
                                 .foregroundColor(.black)
@@ -139,7 +143,10 @@ struct WaitingRoomForNotHostView: View {
                 goToCamera = true
             }
         }
-        
+        .navigationDestination(isPresented: $goToMain) {
+            MainView()
+        }
+        .navigationBarHidden(true)
     }
         // كرت المستخدم (نفسه بدون تغيير)
     struct UserCard: View {
@@ -177,3 +184,4 @@ struct WaitingRoomForNotHostView: View {
 //#Preview {
 //    WaitingRoomForNotHostView(room: <#Room#>)
 //}
+ 

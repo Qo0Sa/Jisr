@@ -52,7 +52,7 @@ struct WaitingRoomView: View {
     
     
     @State private var goToCamera = false
-    
+    @State private var goToMain = false
     
     @Environment(\.modelContext) private var context
     var body: some View {
@@ -74,7 +74,7 @@ struct WaitingRoomView: View {
                     // الهيدر
                     HStack {
                         Button(action: {
-                            waitingDestination = nil
+                            goToMain = true
                         }) {
                             Image(systemName: "chevron.left")
                             
@@ -278,6 +278,9 @@ struct WaitingRoomView: View {
                   isHost: true
               )
         }
+        .navigationDestination(isPresented: $goToMain) {
+            MainView()
+        }
         .navigationBarHidden(true)
         
         
@@ -285,6 +288,11 @@ struct WaitingRoomView: View {
             generateMission()
         }
     }
+    
+    
+    
+    
+    
     func generateMission() {
         do {
             let config = MLModelConfiguration()
