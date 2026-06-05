@@ -179,14 +179,14 @@ struct WaitingRoomView: View {
                         
                         ShareLink(
                             item: """
-                            Join my room in Jisr 
-                            
+                            Join my room in Jisr
+
                             Room Code: \(room.code)
-                            
+
                             Mission:
-                            Mission District Mural Hunt
-                            
-                            Go to Mission District and each photograph the mural that moved you the most
+                            \(room.missionTitle ?? missionTitle)
+
+                            \(room.missionDescription ?? missionDescription)
                             """
                         ) {
                             Image(systemName: "square.and.arrow.up")
@@ -252,6 +252,8 @@ struct WaitingRoomView: View {
                         room.missionTitle = missionTitle
                         room.missionDescription = missionDescription
                         try? context.save()
+                        
+                        sendStartNotification()
                         
                         goToCamera = true
                     }) {
@@ -341,6 +343,21 @@ struct WaitingRoomView: View {
             missionTitle = "Mission"
             print(error.localizedDescription)
         }
+    }
+    
+    func sendStartNotification() {
+
+        // TODO:
+        // هنا لاحقًا بنرسل إشعار لكل المشاركين في الروم
+        // باستخدام CloudKit أو Firebase
+
+    }
+    
+    
+    func handleStartNotification() {
+
+        goToCamera = true
+
     }
     
     // كرت المستخدم (نفسه بدون تغيير)
