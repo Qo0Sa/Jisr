@@ -14,6 +14,8 @@
 
 import SwiftUI
 import SwiftData
+import AVFoundation
+
 
 struct RoomCamera: View {
     let room: Room
@@ -22,7 +24,9 @@ struct RoomCamera: View {
     
     @State private var isFlashOn = false
     @State private var zoomScale: String = "1x"
+    @State private var camera = CameraManager()
     
+
     var body: some View {
         VStack(spacing: 0) {
             // 1. الهيدر العلوي المشترك (يمرر العداد ويفعل التبديل للمعرض الحي)
@@ -69,18 +73,23 @@ struct RoomCamera: View {
             Spacer()
             
             // 3. منطقة عارضة عدسة الكاميرا (تأثير بولاريد عائم بحواف دائرية ناعمة)
-            ZStack {
-                RoundedRectangle(cornerRadius: 36)
-                    .fill(Color.black.opacity(0.05))
-                    .aspectRatio(0.88, contentMode: .fit)
-                    .overlay {
-                        // هنا يتم ربط الـ AVCaptureSession الفعلي مستقبلاً، حالياً محاكاة أيقونة الكاميرا
-                        Image(systemName: "camera.metering.matrix")
-                            .font(.system(size: 40))
-                            .foregroundColor(.black.opacity(0.1))
-                    }
-            }
-            .padding(.horizontal, 24)
+//            ZStack {
+//                RoundedRectangle(cornerRadius: 36)
+//                    .fill(Color.black.opacity(0.05))
+//                    .aspectRatio(0.88, contentMode: .fit)
+//                    .overlay {
+//                        // هنا يتم ربط الـ AVCaptureSession الفعلي مستقبلاً، حالياً محاكاة أيقونة الكاميرا
+//                        Image(systemName: "camera.metering.matrix")
+//                            .font(.system(size: 40))
+//                            .foregroundColor(.black.opacity(0.1))
+//                    }
+//            }
+            CameraPreview(session: camera.session)
+                .aspectRatio(0.88, contentMode: .fit)
+                .clipShape(RoundedRectangle(cornerRadius: 36))
+                .padding(.horizontal, 24)
+            
+//            .padding(.horizontal, 24)
             
             Spacer()
             
@@ -126,12 +135,16 @@ struct RoomCamera: View {
                 }
                 
                 // زر الالتقاط الدائري المعتمد في هوية التطبيق البصرية
+//                Button(action: {
+//                    // محاكاة التقاط لقطة وهمية وتمريرها للشاشة التالية فوراً للتوثيق
+//                    if let mockImage = UIImage(systemName: "photo.fill") {
+//                        onPhotoCaptured(mockImage)
+//                    }
+//                })
                 Button(action: {
-                    // محاكاة التقاط لقطة وهمية وتمريرها للشاشة التالية فوراً للتوثيق
-                    if let mockImage = UIImage(systemName: "photo.fill") {
-                        onPhotoCaptured(mockImage)
-                    }
-                }) {
+                    camera.capturePhoto()
+                })
+                {
                     Circle()
                         .stroke(Color.black.opacity(0.15), lineWidth: 5)
                         .frame(width: 84, height: 84)
@@ -145,6 +158,82 @@ struct RoomCamera: View {
             }
         }
         .background(Color("Backgroundcolor").ignoresSafeArea())
+        .onAppear {
+            camera.onPhotoCaptured = { image in
+                onPhotoCaptured(image)
+            }
+        }
+    }
+}
+
+
+final class CameraManager: NSObject, AVCapturePhotoCaptureDelegate {
+    let session = AVCaptureSession()
+    private let output = AVCapturePhotoOutput()
+    var onPhotoCaptured: ((UIImage) -> Void)?
+    
+//    override init() {
+//        super.init()
+//        configure()
+//    }
+    
+    override init() {
+        super.init()
+
+        let status = AVCaptureDevice.authorizationStatus(for: .video)
+
+        if status == .authorized {
+            configure()
+        } else if status == .notDetermined {
+            AVCaptureDevice.requestAccess(for: .video) { granted in
+                if granted {
+                    DispatchQueue.main.async {
+                        self.configure()
+                    }
+                }
+            }
+        }
+    }
+    
+    private func configure() {
+        session.beginConfiguration()
+        
+        guard let device = AVCaptureDevice.default(
+            .builtInWideAngleCamera,
+            for: .video,
+            position: .back
+        ) else { return }
+        
+        guard let input = try? AVCaptureDeviceInput(device: device) else { return }
+        
+        if session.canAddInput(input) {
+            session.addInput(input)
+        }
+        
+        if session.canAddOutput(output) {
+            session.addOutput(output)
+        }
+        
+        session.commitConfiguration()
+        session.startRunning()
+    }
+    func capturePhoto() {
+        let settings = AVCapturePhotoSettings()
+        output.capturePhoto(with: settings, delegate: self)
+    }
+    func photoOutput(
+        _ output: AVCapturePhotoOutput,
+        didFinishProcessingPhoto photo: AVCapturePhoto,
+        error: Error?
+    ) {
+        guard
+            let data = photo.fileDataRepresentation(),
+            let image = UIImage(data: data)
+        else { return }
+
+        DispatchQueue.main.async {
+            self.onPhotoCaptured?(image)
+        }
     }
 }
 #Preview {
