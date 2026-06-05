@@ -97,14 +97,17 @@ struct RoomCamera: View {
             VStack(spacing: 24) {
                 HStack(spacing: 40) {
                     // زر الفلاش
-                    Button(action: { isFlashOn.toggle() }) {
-                        Image(systemName: isFlashOn ? "bolt.fill" : "bolt.slash.fill")
-                            .font(.system(size: 20, weight: .medium))
-                            .foregroundColor(isFlashOn ? .yellow : .black.opacity(0.6))
-                            .frame(width: 44, height: 44)
-                            .background(Color("fieldColor"))
-                            .clipShape(Circle())
-                    }
+                    Button(action: {
+                                            isFlashOn.toggle()
+                                            camera.toggleFlash(turnOn: isFlashOn)
+                                        }) {
+                                            Image(systemName: isFlashOn ? "bolt.fill" : "bolt.slash.fill")
+                                                .font(.system(size: 20, weight: .medium))
+                                                .foregroundColor(isFlashOn ? .yellow : .black.opacity(0.6))
+                                                .frame(width: 44, height: 44)
+                                                .background(Color("fieldColor"))
+                                                .clipShape(Circle())
+                                        }
                     
                     // كبسولة تقريب الزوم (.5x, 1x, 2x)
                     HStack(spacing: 12) {
@@ -116,15 +119,17 @@ struct RoomCamera: View {
                                 .padding(.vertical, 6)
                                 .background(zoomScale == scale ? Color.black.opacity(0.7) : Color.clear)
                                 .clipShape(Capsule())
-                                .onTapGesture { zoomScale = scale }
-                        }
+                                .onTapGesture {
+                                    zoomScale = scale
+                                    camera.setZoom(scale: scale)
+                                }                        }
                     }
                     .padding(4)
                     .background(Color("fieldColor"))
                     .clipShape(Capsule())
                     
                     // زر تبديل الكاميرا (أمامية/خلفية)
-                    Button(action: {}) {
+                    Button(action: {camera.switchCamera()}) {
                         Image(systemName: "arrow.triangle.2.circlepath")
                             .font(.system(size: 20, weight: .medium))
                             .foregroundColor(.black.opacity(0.6))
@@ -177,6 +182,9 @@ final class CameraManager: NSObject, AVCapturePhotoCaptureDelegate {
 //        configure()
 //    }
     
+    private var currentInput: AVCaptureDeviceInput?
+    private var currentPosition: AVCaptureDevice.Position = .back
+    
     override init() {
         super.init()
 
@@ -208,6 +216,7 @@ final class CameraManager: NSObject, AVCapturePhotoCaptureDelegate {
         
         if session.canAddInput(input) {
             session.addInput(input)
+            currentInput = input
         }
         
         if session.canAddOutput(output) {
@@ -215,8 +224,63 @@ final class CameraManager: NSObject, AVCapturePhotoCaptureDelegate {
         }
         
         session.commitConfiguration()
-        session.startRunning()
-    }
+        DispatchQueue.global(qos: .userInitiated).async {
+            self.session.startRunning()    } }
+    
+    func switchCamera() {
+            session.beginConfiguration()
+            
+            if let currentInput = currentInput {
+                session.removeInput(currentInput)
+            }
+            
+            currentPosition = (currentPosition == .back) ? .front : .back
+            
+            guard let newDevice = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: currentPosition) else { return }
+            guard let newInput = try? AVCaptureDeviceInput(device: newDevice) else { return }
+            
+            if session.canAddInput(newInput) {
+                session.addInput(newInput)
+                currentInput = newInput
+            } else {
+                // إعادة العدسة الخلفية كحماية في حال تعطل الأمامية
+                if let currentInput = currentInput { session.addInput(currentInput) }
+            }
+            
+            session.commitConfiguration()
+        }
+        
+        // 💡 وظيفة التحكم بكشاف الهاتف الفعلي أثناء التصوير
+        func toggleFlash(turnOn: Bool) {
+            guard let device = AVCaptureDevice.default(for: .video), device.hasTorch else { return }
+            do {
+                try device.lockForConfiguration()
+                device.torchMode = turnOn ? .on : .off
+                device.unlockForConfiguration()
+            } catch {
+                print("❌ Torch alignment error: \(error.localizedDescription)")
+            }
+        }
+        
+        // 💡 وظيفة التحكم بالزوم الرقمي لعدسة الكاميرا حياً (.5x, 1x, 2x)
+        func setZoom(scale: String) {
+            guard let device = AVCaptureDevice.default(for: .video) else { return }
+            let factor: CGFloat
+            switch scale {
+            case ".5x": factor = 1.0 // العدسات العادية تبدأ من 1.0 كأقل تقريب رقمي متاح نظامياً
+            case "2x":  factor = 2.0
+            default:    factor = 1.0
+            }
+            
+            do {
+                try device.lockForConfiguration()
+                device.videoZoomFactor = max(1.0, min(factor, device.activeFormat.videoMaxZoomFactor))
+                device.unlockForConfiguration()
+            } catch {
+                print("❌ Zoom adjustment error: \(error.localizedDescription)")
+            }
+        }
+        
     func capturePhoto() {
         let settings = AVCapturePhotoSettings()
         output.capturePhoto(with: settings, delegate: self)

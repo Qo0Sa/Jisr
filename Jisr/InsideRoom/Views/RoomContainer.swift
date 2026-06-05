@@ -5,19 +5,16 @@
 //  Created by Wteen Alghamdy on 04/12/1447 AH.
 //
 
-//
-//  RoomContainer.swift
-//  Jisr
-//
-//  Created by Wteen Alghamdy on 01/12/1447 AH.
-//
-
 import SwiftUI
 import SwiftData
 
 struct RoomContainer: View {
     let room: Room
     let isHost: Bool
+    
+    // 💡 جلب الـ context وقائمة اليوزرز لربط لقطة الصورة باليوزر المسجل حياً
+    @Environment(\.modelContext) private var context
+    @Query private var users: [User]
     
     @State private var isShowingFeed = false
     @State private var capturedImage: UIImage? = nil
@@ -34,7 +31,18 @@ struct RoomContainer: View {
                         }
                     },
                     onSave: { thought, emoji in
-                        // هنا يتم رفع الصورة الفعلية وتوثيقها ببيانات الـ SwiftData حياً مستقبلاً
+
+                        if let photoData = uiImage.jpegData(compressionQuality: 0.8) {
+                            
+                            if let currentUser = users.first {
+                                
+                                let newPhoto = Photo(url: thought, room: room, user: currentUser)
+                                
+                                context.insert(newPhoto)
+                                try? context.save() // إجبار المزامنة الفورية على نطاق التطبيق لضمان ظهورها في الهستوري والمعرض
+                            }
+                        }
+                        
                         withAnimation(.easeInOut(duration: 0.25)) {
                             capturedImage = nil
                             isShowingFeed = true // الانتقال التلقائي لمعرض الصور الحي بعد الحفظ
@@ -62,11 +70,9 @@ struct RoomContainer: View {
 }
 
 #Preview {
-    // 1. إنشاء حاوية بيانات وهمية في الذاكرة المؤقتة للـ Preview
     let config = ModelConfiguration(isStoredInMemoryOnly: true)
     let container = try! ModelContainer(for: Room.self, User.self, Photo.self, configurations: config)
     
-    // 2. تجهيز الغرفة والمستخدم
     let sampleRoom = Room(
         name: "Mission District Mural Hunt",
         code: "JSR-777",
@@ -76,7 +82,6 @@ struct RoomContainer: View {
     )
     let sampleUser = User(name: "Wteen")
     
-    // إدخال البيانات في الـ Context
     container.mainContext.insert(sampleRoom)
     container.mainContext.insert(sampleUser)
     
