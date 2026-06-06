@@ -15,6 +15,7 @@
 import SwiftUI
 import SwiftData
 import AVFoundation
+import Combine
 
 
 struct RoomCamera: View {
@@ -24,8 +25,7 @@ struct RoomCamera: View {
     
     @State private var isFlashOn = false
     @State private var zoomScale: String = "1x"
-    @State private var camera = CameraManager()
-    
+    @StateObject private var camera = CameraManager()
 
     var body: some View {
         VStack(spacing: 0) {
@@ -162,37 +162,47 @@ struct RoomCamera: View {
                 .padding(.bottom, 24)
             }
         }
-        .background(Color("Backgroundcolor").ignoresSafeArea())
+        .background(Color("Backgroundcolor").ignoresSafeArea() )
+//        .onAppear {
+//            camera.onPhotoCaptured = { image in
+//                onPhotoCaptured(image)
+//            }
+//        }
         .onAppear {
+            camera.startSession()
+
             camera.onPhotoCaptured = { image in
                 onPhotoCaptured(image)
             }
+        }
+        .onDisappear {
+            camera.stopSession()
         }
     }
 }
 
 
-final class CameraManager: NSObject, AVCapturePhotoCaptureDelegate {
-    let session = AVCaptureSession()
+final class CameraManager: NSObject, ObservableObject, AVCapturePhotoCaptureDelegate {    let session = AVCaptureSession()
     private let output = AVCapturePhotoOutput()
     var onPhotoCaptured: ((UIImage) -> Void)?
+    private var currentInput: AVCaptureDeviceInput?
+    private var currentPosition: AVCaptureDevice.Position = .back
     
 //    override init() {
 //        super.init()
 //        configure()
 //    }
-    
-    private var currentInput: AVCaptureDeviceInput?
-    private var currentPosition: AVCaptureDevice.Position = .back
-    
     override init() {
         super.init()
 
         let status = AVCaptureDevice.authorizationStatus(for: .video)
 
-        if status == .authorized {
+        switch status {
+
+        case .authorized:
             configure()
-        } else if status == .notDetermined {
+
+        case .notDetermined:
             AVCaptureDevice.requestAccess(for: .video) { granted in
                 if granted {
                     DispatchQueue.main.async {
@@ -200,32 +210,55 @@ final class CameraManager: NSObject, AVCapturePhotoCaptureDelegate {
                     }
                 }
             }
+
+        default:
+            print("❌ Camera permission denied")
         }
     }
     
     private func configure() {
+
+        print("✅ CONFIGURE CALLED")
+
         session.beginConfiguration()
-        
+
         guard let device = AVCaptureDevice.default(
             .builtInWideAngleCamera,
             for: .video,
             position: .back
-        ) else { return }
-        
-        guard let input = try? AVCaptureDeviceInput(device: device) else { return }
-        
+        ) else {
+            print("❌ NO CAMERA DEVICE")
+            return
+        }
+
+        guard let input = try? AVCaptureDeviceInput(device: device) else {
+            print("❌ FAILED INPUT")
+            return
+        }
+
         if session.canAddInput(input) {
             session.addInput(input)
             currentInput = input
+            print("✅ INPUT ADDED")
         }
-        
+
         if session.canAddOutput(output) {
             session.addOutput(output)
+            print("✅ OUTPUT ADDED")
         }
-        
+
         session.commitConfiguration()
+
         DispatchQueue.global(qos: .userInitiated).async {
-            self.session.startRunning()    } }
+            self.session.startRunning()
+
+            DispatchQueue.main.async {
+                self.objectWillChange.send()
+            }
+
+            print("✅ SESSION RUNNING = \(self.session.isRunning)")
+        }
+    }
     
     func switchCamera() {
             session.beginConfiguration()
@@ -297,6 +330,20 @@ final class CameraManager: NSObject, AVCapturePhotoCaptureDelegate {
 
         DispatchQueue.main.async {
             self.onPhotoCaptured?(image)
+        }
+    }
+    
+    
+    func startSession() {
+        if !session.isRunning {
+            DispatchQueue.global(qos: .userInitiated).async {
+                self.session.startRunning()
+            }
+        }
+    }
+    func stopSession() {
+        if session.isRunning {
+            session.stopRunning()
         }
     }
 }
