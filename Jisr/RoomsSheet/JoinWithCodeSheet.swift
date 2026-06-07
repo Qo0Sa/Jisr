@@ -58,9 +58,17 @@ struct JoinWithCodeSheet: View {
                     //wed
                     let descriptor = FetchDescriptor<Room>()
 
+                    
                        if let room = try? context.fetch(descriptor)
                            .first(where: { $0.code == roomCode }) {
-
+                           let userDescriptor = FetchDescriptor<User>()
+                           if let currentUser = try? context.fetch(userDescriptor).first {
+                               let participant = RoomParticipant(user: currentUser, room: room)
+                               context.insert(participant)
+                               try? context.save()
+                           }
+                           
+                           
                            onJoined(room)
                            isPresented = false
                        }
