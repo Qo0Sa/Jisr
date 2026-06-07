@@ -18,19 +18,40 @@ struct FeedCard: View {
     let userName: String
     let thoughtText: String
     let emojiReaction: String
+    let imageData: Data?
     
     var body: some View {
         VStack(spacing: 0) {
             // منطقة عرض الصورة الأساسية داخل البولاريد
             ZStack(alignment: .bottomLeading) {
+//                RoundedRectangle(cornerRadius: 16)
+//                    .fill(Color.black.opacity(0.04))
+//                    .aspectRatio(0.85, contentMode: .fit) // أبعاد متناسقة للصور المستطيلة بالمعرض
+//                    .overlay {
+//                        Image(systemName: "photo.fill")
+//                            .font(.system(size: 30))
+//                            .foregroundColor(.black.opacity(0.1))
+//                    }
                 RoundedRectangle(cornerRadius: 16)
                     .fill(Color.black.opacity(0.04))
-                    .aspectRatio(0.85, contentMode: .fit) // أبعاد متناسقة للصور المستطيلة بالمعرض
+                    .aspectRatio(0.85, contentMode: .fit)
                     .overlay {
-                        Image(systemName: "photo.fill")
-                            .font(.system(size: 30))
-                            .foregroundColor(.black.opacity(0.1))
+
+                        if let imageData,
+                           let uiImage = UIImage(data: imageData) {
+
+                            Image(uiImage: uiImage)
+                                .resizable()
+                                .scaledToFill()
+
+                        } else {
+
+                            Image(systemName: "photo.fill")
+                                .font(.system(size: 30))
+                                .foregroundColor(.black.opacity(0.1))
+                        }
                     }
+                    .clipShape(RoundedRectangle(cornerRadius: 16))
                 
                 // الطبقة الشفافة السفلية العائمة (اسم المستخدم والريأكشن)
                 HStack {
@@ -80,7 +101,11 @@ struct FeedCard: View {
 #Preview {
     ZStack {
         Color("Backgroundcolor").ignoresSafeArea()
-        FeedCard(userName: "myname", thoughtText: "text text text text text text text text text text", emojiReaction: "😆")
-            .frame(width: 180)
+        FeedCard(
+            userName: "myname",
+            thoughtText: "text",
+            emojiReaction: "😆",
+            imageData: nil
+        )
     }
 }

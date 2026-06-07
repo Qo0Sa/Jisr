@@ -8,7 +8,7 @@
          BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
          <BreakpointContent
             uuid = "B5DC7B6A-EB64-4765-BD28-F59E73016255"
-            shouldBeEnabled = "Yes"
+            shouldBeEnabled = "No"
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "Jisr/InsideRoom/Views/RoomFeed.swift"
@@ -18,34 +18,50 @@
             endingLineNumber = "32"
             landmarkName = "body"
             landmarkType = "24">
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "64140086-DFB3-4F44-B2F7-9C70534D9D3A"
+            shouldBeEnabled = "Yes"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "Jisr/InsideRoom/Views/RoomFeed.swift"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "33"
+            endingLineNumber = "33"
+            landmarkName = "body"
+            landmarkType = "24">
             <Locations>
                <Location
-                  uuid = "B5DC7B6A-EB64-4765-BD28-F59E73016255 - a4b89afe9728b5c5"
+                  uuid = "64140086-DFB3-4F44-B2F7-9C70534D9D3A - 492065afce61479b"
                   shouldBeEnabled = "Yes"
                   ignoreCount = "0"
                   continueAfterRunningActions = "No"
                   symbolName = "Jisr.RoomFeed.body.getter : some"
                   moduleName = "Jisr.debug.dylib"
                   usesParentBreakpointCondition = "Yes"
-                  urlString = "file:///Users/wedalasiri/Desktop/xcode/%20new%20mew%20Jisr/Jisr/InsideRoom/Views/RoomFeed.swift"
+                  urlString = "file:///Users/wedalasiri/Desktop/xcode/Jisr%20new%20new%20mew%20/Jisr/InsideRoom/Views/RoomFeed.swift"
                   startingColumnNumber = "9223372036854775807"
                   endingColumnNumber = "9223372036854775807"
                   startingLineNumber = "33"
                   endingLineNumber = "33">
                </Location>
                <Location
-                  uuid = "B5DC7B6A-EB64-4765-BD28-F59E73016255 - a4b89afe9728b5c5"
+                  uuid = "64140086-DFB3-4F44-B2F7-9C70534D9D3A - 99919f295a6239a8"
                   shouldBeEnabled = "Yes"
                   ignoreCount = "0"
                   continueAfterRunningActions = "No"
-                  symbolName = "Jisr.RoomFeed.body.getter : some"
+                  symbolName = "closure #1 () -&gt; SwiftUI.TupleView&lt;(SwiftUI.VStack&lt;SwiftUI.TupleView&lt;(&lt;&lt;opaque return type of SwiftUI.View.padding(SwiftUI.Edge.Set, Swift.Optional&lt;CoreGraphics.CGFloat&gt;) -&gt; some&gt;&gt;.0, SwiftUI.ScrollView&lt;SwiftUI._ConditionalContent&lt;&lt;&lt;opaque return type of SwiftUI.View.padding(SwiftUI.Edge.Set, Swift.Optional&lt;CoreGraphics.CGFloat&gt;) -&gt; some&gt;&gt;.0, &lt;&lt;opaque return type of SwiftUI.View.padding(SwiftUI.Edge.Set, Swift.Optional&lt;CoreGraphics.CGFloat&gt;) -&gt; some&gt;&gt;.0&gt;&gt;)&gt;&gt;, Swift.Optional&lt;SwiftUI.VStack&lt;SwiftUI.TupleView&lt;(SwiftUI.Spacer, &lt;&lt;opaque return type of SwiftUI.View.padding(SwiftUI.Edge.Set, Swift.Optional&lt;CoreGraphics.CGFloat&gt;) -&gt; some&gt;&gt;.0)&gt;&gt;&gt;, Swift.Optional&lt;&lt;&lt;opaque return type of SwiftUI.View.transition&lt;&#x3c4;_0_0 where &#x3c4;_1_0: SwiftUI.Transition&gt;(&#x3c4;_1_0) -&gt; some&gt;&gt;.0&gt;)&gt; in Jisr.RoomFeed.body.getter : some"
                   moduleName = "Jisr.debug.dylib"
                   usesParentBreakpointCondition = "Yes"
-                  urlString = "file:///Users/wedalasiri/Desktop/xcode/%20new%20mew%20Jisr/Jisr/InsideRoom/Views/RoomFeed.swift"
+                  urlString = "file:///Users/wedalasiri/Desktop/xcode/Jisr%20new%20new%20mew%20/Jisr/InsideRoom/Views/RoomFeed.swift"
                   startingColumnNumber = "9223372036854775807"
                   endingColumnNumber = "9223372036854775807"
-                  startingLineNumber = "33"
-                  endingLineNumber = "33">
+                  startingLineNumber = "34"
+                  endingLineNumber = "34">
                </Location>
             </Locations>
          </BreakpointContent>

@@ -159,13 +159,23 @@ class Room {
 }
 @Model
 class Photo {
-    var url: String = ""
+
+    var imageData: Data? = nil
+    var thought: String = ""
+
     var uploadedAt: Date = Date()
     var room: Room? = nil
     var user: User? = nil
+
     
-    init(url: String, room: Room, user: User) {
-        self.url = url
+    init(
+        imageData: Data?,
+        thought: String,
+        room: Room,
+        user: User
+    ) {
+        self.imageData = imageData
+        self.thought = thought
         self.uploadedAt = Date()
         self.room = room
         self.user = user

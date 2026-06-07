@@ -30,22 +30,55 @@ struct RoomContainer: View {
                             capturedImage = nil // مسح اللقطة والعودة الفورية للكاميرا
                         }
                     },
+//                    onSave: { thought, emoji in
+//
+//                        if let photoData = uiImage.jpegData(compressionQuality: 0.8) {
+//                            
+//                            if let currentUser = users.first {
+//                                
+//                                let newPhoto = Photo(
+//                                    imageData: photoData,
+//                                    thought: thought,
+//                                    room: room,
+//                                    user: currentUser
+//                                )
+//                                context.insert(newPhoto)
+//                                try? context.save() // إجبار المزامنة الفورية على نطاق التطبيق لضمان ظهورها في الهستوري والمعرض
+//                            }
+//                        }
+//                        
+//                        withAnimation(.easeInOut(duration: 0.25)) {
+//                            capturedImage = nil
+//                            isShowingFeed = true // الانتقال التلقائي لمعرض الصور الحي بعد الحفظ
+//                        }
+//                    }
+                    
                     onSave: { thought, emoji in
 
-                        if let photoData = uiImage.jpegData(compressionQuality: 0.8) {
-                            
-                            if let currentUser = users.first {
-                                
-                                let newPhoto = Photo(url: thought, room: room, user: currentUser)
-                                
-                                context.insert(newPhoto)
-                                try? context.save() // إجبار المزامنة الفورية على نطاق التطبيق لضمان ظهورها في الهستوري والمعرض
-                            }
+                        guard let uiImage = capturedImage,
+                              let imageData = uiImage.jpegData(compressionQuality: 0.8) else {
+                            return
                         }
-                        
+
+                        let currentUser = users.first
+
+                        let newPhoto = Photo(
+                            imageData: imageData,
+                            thought: thought,
+                            room: room, user: <#User#>
+                        )
+
+                        context.insert(newPhoto)
+
+                        do {
+                            try context.save()
+                        } catch {
+                            print("Save failed: \(error)")
+                        }
+
                         withAnimation(.easeInOut(duration: 0.25)) {
                             capturedImage = nil
-                            isShowingFeed = true // الانتقال التلقائي لمعرض الصور الحي بعد الحفظ
+                            isShowingFeed = true
                         }
                     }
                 )
