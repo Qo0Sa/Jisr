@@ -27,18 +27,33 @@ struct RoomFeed: View {
         GridItem(.flexible(), spacing: 14),
         GridItem(.flexible(), spacing: 14)
     ]
-    
+    @State private var goToMain = false
+
     var body: some View {
         ZStack {
             VStack(spacing: 0) {
-                RoomHeader(
-                    currentProgress: roomPhotos.count,
-                    maxPhotos: room.maxPhotos,
-                    isShowingFeed: isShowingFeed,
-                    onGalleryToggle: {
-                        withAnimation(.easeInOut(duration: 0.25)) { isShowingFeed = false }
+                HStack(spacing: 12) {
+
+                    Button(action: {
+                        goToMain = true
+                    }) {
+                        Image(systemName: "chevron.left")
+                            .font(.system(size: 24, weight: .bold))
+                            .foregroundColor(.black)
+                            .offset(x: 17)
                     }
-                )
+
+                    RoomHeader(
+                        currentProgress: roomPhotos.count,
+                        maxPhotos: room.maxPhotos,
+                        isShowingFeed: isShowingFeed,
+                        onGalleryToggle: {
+                            withAnimation(.easeInOut(duration: 0.25)) {
+                                isShowingFeed = false
+                            }
+                        }
+                    )
+                }
                 
                 ScrollView(.vertical, showsIndicators: false) {
                     if roomPhotos.isEmpty {
@@ -97,6 +112,9 @@ struct RoomFeed: View {
                 )
                 .transition(.opacity)
             }
+        }
+        .navigationDestination(isPresented: $goToMain) {
+            MainView()
         }
         .background(Color("Backgroundcolor").ignoresSafeArea())
         .navigationBarBackButtonHidden(true)
