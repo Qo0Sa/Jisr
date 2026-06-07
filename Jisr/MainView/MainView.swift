@@ -49,7 +49,6 @@ struct MainView: View {
         }
         return nil
     }
-    
     var body: some View {
         NavigationStack {
             ZStack(alignment: .topLeading) {

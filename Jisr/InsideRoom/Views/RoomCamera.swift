@@ -30,6 +30,7 @@ struct RoomCamera: View {
     var body: some View {
         VStack(spacing: 0) {
             // 1. الهيدر العلوي المشترك (يمرر العداد ويفعل التبديل للمعرض الحي)
+            // ✅ استبدلي استدعاء الهيدر في ملف RoomCamera.swift بهذا الكود بالضبط:
             RoomHeader(
                 currentProgress: room.photos?.count ?? 0,
                 maxPhotos: room.maxPhotos,
@@ -38,7 +39,8 @@ struct RoomCamera: View {
                     withAnimation(.easeInOut(duration: 0.25)) {
                         isShowingFeed = true // الانتقال لشبكة صور الروم الحية
                     }
-                }
+                },
+                room: room // 👈 هذا السطر السحري اللي ضفناه الحين عشان يشتغل الهيدر داخل الكاميرا حياً ومربوط بالكلاود!
             )
             
             // 2. كارد التحدي العائم (PromptCard المتروك للـ CoreML لاحقاً)

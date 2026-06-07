@@ -32,7 +32,8 @@ struct RoomFeed: View {
     var body: some View {
         ZStack {
             VStack(spacing: 0) {
-                HStack(spacing: 12) {
+                // ابحثي عن هذا الجزء وغيري الـ spacing والـ padding
+                HStack(spacing: 0) { // غيري السبيسينق لـ 0
 
                     Button(action: {
                         goToMain = true
@@ -40,20 +41,23 @@ struct RoomFeed: View {
                         Image(systemName: "chevron.left")
                             .font(.system(size: 24, weight: .bold))
                             .foregroundColor(.black)
-                            .offset(x: 17)
                     }
+                    .padding(.leading, 24) // مسافة زر العودة من الحافة
 
+                    // ✅ استبدلي استدعاء الهيدر في ملف RoomFeed.swift بهذا بالضبط:
                     RoomHeader(
                         currentProgress: roomPhotos.count,
                         maxPhotos: room.maxPhotos,
                         isShowingFeed: isShowingFeed,
                         onGalleryToggle: {
                             withAnimation(.easeInOut(duration: 0.25)) {
-                                isShowingFeed = false
+                                isShowingFeed.toggle() // يغير الحالة تلقائياً
                             }
-                        }
+                        },
+                        room: room // 👈 هذا هو السطر السحري اللي ضفناه عشان نربطه ببيانات الكلاود الحقيقية
                     )
                 }
+                .padding(.vertical, 12)
                 
                 ScrollView(.vertical, showsIndicators: false) {
                     if roomPhotos.isEmpty {
