@@ -11,13 +11,21 @@ import SwiftData
 @main
 struct JisrApp: App {
     @StateObject private var layerState = LayerState()
+    
+    let container: ModelContainer = {
+        let schema = Schema([User.self, Room.self, Photo.self, RoomParticipant.self])
+        let config = ModelConfiguration(
+            schema: schema,
+            cloudKitDatabase: .automatic
+        )
+        return try! ModelContainer(for: schema, configurations: config)
+    }()
 
     var body: some Scene {
         WindowGroup {
             SplashView()
                 .environmentObject(layerState)
         }
-        .modelContainer(for: [User.self, Room.self, Photo.self ,RoomParticipant.self])
+        .modelContainer(container)
     }
 }
-

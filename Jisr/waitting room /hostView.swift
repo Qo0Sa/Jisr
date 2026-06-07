@@ -29,7 +29,8 @@ struct WaitingRoomView: View {
     @State private var copied = false
    
     var isStarted: Bool = false
-    
+    @Environment(\.dismiss) private var dismiss
+
     let room: Room
 
     @State private var missionTitle = ""
@@ -52,7 +53,7 @@ struct WaitingRoomView: View {
     
     
     @State private var goToCamera = false
-    @State private var goToMain = false
+ //   @State private var goToMain = false
     
     @Environment(\.modelContext) private var context
     var body: some View {
@@ -73,14 +74,16 @@ struct WaitingRoomView: View {
                     
                     // الهيدر
                     HStack {
+
+                        // ثم في الزر:
                         Button(action: {
-                            goToMain = true
+                            dismiss()
                         }) {
                             Image(systemName: "chevron.left")
-                            
                                 .font(.system(size: 24, weight: .bold))
                                 .foregroundColor(.black)
                         }
+                        
                         Spacer()
                         Text(room.name)
                             .font(.UbuntuBold(size: 22))
@@ -280,9 +283,10 @@ struct WaitingRoomView: View {
                   isHost: true
               )
         }
-        .navigationDestination(isPresented: $goToMain) {
-            MainView()
-        }
+//        .navigationDestination(isPresented: $goToMain) {
+//            MainView()
+//        }
+        
         .navigationBarHidden(true)
         
         
