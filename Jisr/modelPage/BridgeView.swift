@@ -1,255 +1,363 @@
-//
 //  BridgeView.swift
-//  aaa
-//
+//  Jisr
 //  Created by Sarah Alnasser on 10/05/2026.
-//
+//  All views for the Model page: ModelPage, NoLayersPopup, BuildingSceneView.
+//  جميع واجهات صفحة الجسر
 
 import SwiftUI
-import RealityKit
-import Combine
+import SceneKit
 
-final class LayerState: ObservableObject {
-    @Published var layerCount: Int {
-        didSet { UserDefaults.standard.set(layerCount, forKey: "layerCount") }
-    }
+// MARK: - ModelPage الصفحة الرئيسية للجسر
 
-    private let lastAddedKey    = "lastLayerAddedDate"
-    private let creditedRoomsKey = "creditedRoomCodes"
-    private let expiryInterval: TimeInterval = 3 * 24 * 3600
-
-    init() {
-        self.layerCount = UserDefaults.standard.integer(forKey: "layerCount")
-        checkWeeklyExpiry(maxLayers: 18)
-    }
-
-    // Called whenever rooms change — credits each completed room exactly once
-    func syncWithRooms(_ rooms: [Room], maxLayers: Int) {
-        var credited = Set(UserDefaults.standard.stringArray(forKey: creditedRoomsKey) ?? [])
-        var changed = false
-
-        for room in rooms {
-            let photoCount = room.photos?.count ?? 0
-            guard room.maxPhotos > 0,
-                  photoCount >= room.maxPhotos,
-                  !credited.contains(room.code) else { continue }
-
-            if layerCount < maxLayers {
-                layerCount += 1
-                UserDefaults.standard.set(Date(), forKey: lastAddedKey)
-            }
-            credited.insert(room.code)
-            changed = true
-        }
-
-        if changed {
-            UserDefaults.standard.set(Array(credited), forKey: creditedRoomsKey)
-        }
-    }
-
-    func checkWeeklyExpiry(maxLayers: Int) {
-        guard layerCount > 0, layerCount < maxLayers else { return }
-        guard let lastDate = UserDefaults.standard.object(forKey: lastAddedKey) as? Date else {
-            UserDefaults.standard.set(Date(), forKey: lastAddedKey)
-            return
-        }
-        if Date().timeIntervalSince(lastDate) >= expiryInterval {
-            layerCount = Swift.max(0, layerCount - 1)
-            UserDefaults.standard.set(Date(), forKey: lastAddedKey)
-        }
-    }
-}
-
+// Main page that shows the 3D bridge model and the user's building progress.
 struct ModelPage: View {
-    @EnvironmentObject var state: LayerState
-    private let maxLayers = 18
 
-    var motivationalText: String {
-        switch state.layerCount {
-        case 0: return "Start building!"
-        case 1...4: return "Great start!"
-        case 5...11: return "Keep up the good work!"
-        case 12...17: return "Almost there!"
-        default: return "You did it!"
-        }
-    }
+    @EnvironmentObject var state: LayerState
+    @Environment(\.dismiss) private var dismiss
+
+    @State private var showNoLayersPopup = false
 
     var body: some View {
         ZStack(alignment: .bottom) {
-            Color("Backgroundcolor")
-                .ignoresSafeArea()
+
+            Color("Backgroundcolor").ignoresSafeArea()
 
             VStack(alignment: .leading, spacing: 0) {
-                // Header text
+
+                // MARK: Navigation Header
+
+                HStack {
+                    // Back button matching ProfileView style | زر الرجوع بنفس أسلوب ProfileView
+                    Button(action: { dismiss() }) {
+                        Image(systemName: "chevron.left")
+                            .font(.system(size: 22, weight: .bold))
+                            .foregroundColor(Color("buttonColor"))
+                    }
+
+                    Spacer()
+
+                    Text("Golden Gate Bridge")
+                        .font(.custom("Ubuntu-Bold", size: 22))
+                        .foregroundColor(Color("buttonColor"))
+
+                    Spacer()
+
+                    Image(systemName: "chevron.left").opacity(0)
+                }
+                .padding(.horizontal, 24)
+                .padding(.top, 16)
+
+                // Progress Text
                 VStack(alignment: .leading, spacing: 4) {
                     Text("you have built using \(state.layerCount) \rrooms")
                         .font(.custom("Ubuntu-Bold", size: 18))
                         .foregroundColor(Color("buttonColor"))
-                    Text(motivationalText)
+
+                    // Motivational message from ViewModel
+                    Text(state.motivationalText)
                         .font(.system(size: 14, weight: .regular))
                         .foregroundColor(Color("buttonColor"))
                 }
                 .padding(.horizontal, 24)
                 .padding(.top, 16)
 
-                // 3D model
-                BuildingRealityView(layerCount: state.layerCount)
+                // MARK: 3D Model
+
+                BuildingSceneView(layerCount: state.layerCount)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
 
-                // Spacer for bottom bar
                 Spacer().frame(height: 100)
             }
 
-            // Bottom progress bar
-            VStack(alignment: .leading, spacing: 8) {
-                Text("building progress")
-                    .font(.system(size: 14, weight: .regular))
-                    .foregroundColor(Color("buttonColor"))
+            // MARK: Bottom Progress Bar
 
-                HStack(alignment: .center, spacing: 12) {
-                    GeometryReader { geo in
-                        let spacing: CGFloat = 3
-                        let totalSpacing = spacing * CGFloat(maxLayers - 1)
-                        let segmentWidth = (geo.size.width - totalSpacing) / CGFloat(maxLayers)
-                        let filledWidth = segmentWidth * CGFloat(state.layerCount) + spacing * CGFloat(max(state.layerCount - 1, 0))
-
-                        ZStack(alignment: .leading) {
-                            // Empty segments
-                            HStack(spacing: spacing) {
-                                ForEach(1...maxLayers, id: \.self) { _ in
-                                    Capsule()
-                                        .fill(Color("gray20"))
-                                        .frame(width: segmentWidth, height: 8)
-                                }
-                            }
-                            // Single connected filled bar
-                            if state.layerCount > 0 {
-                                Capsule()
-                                    .fill(Color("buttonColor"))
-                                    .frame(width: filledWidth, height: 8)
-                            }
-                        }
-                    }
-                    .frame(height: 8)
-
-                    Text("\(state.layerCount)/\(maxLayers)")
-                        .font(.custom("Ubuntu-Bold", size: 22))
-                        .foregroundColor(Color("buttonColor"))
-                        .fixedSize()
-                }
-            }
-            .padding(.horizontal, 20)
-            .padding(.vertical, 16)
-            .background(Color("fieldColor"), in: RoundedRectangle(cornerRadius: 16))
-            .compositingGroup()
-            .shadow(color: Color("buttonColor").opacity(0.9), radius: 0, x: 0, y: 6)
-            .padding(.horizontal, 16)
-            .padding(.bottom, 16)
+            ProgressBarCard(layerCount: state.layerCount, maxLayers: LayerState.maxLayers)
         }
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            ToolbarItem(placement: .principal) {
-                Text("Golden Gate Bridge")
-                    .font(.custom("Ubuntu-Bold", size: 22))
-                    .foregroundColor(Color("buttonColor"))
+        .navigationBarBackButtonHidden(true)
+        .onAppear {
+            // Show popup if user has no layers yet
+            if state.layerCount == 0 { showNoLayersPopup = true }
+        }
+        .overlay {
+            if showNoLayersPopup {
+                NoLayersPopup(isPresented: $showNoLayersPopup)
+                    .transition(.opacity)
+                    .animation(.easeInOut(duration: 0.2), value: showNoLayersPopup)
             }
         }
     }
 }
 
-struct BuildingRealityView: UIViewRepresentable {
-    var layerCount: Int
+// MARK: - ProgressBarCard
 
-    func makeCoordinator() -> Coordinator {
-        Coordinator()
+// Bottom card showing segmented progress bar and layer count.
+private struct ProgressBarCard: View {
+    let layerCount: Int
+    let maxLayers: Int
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("building progress")
+                .font(.system(size: 14, weight: .regular))
+                .foregroundColor(Color("buttonColor"))
+
+            HStack(alignment: .center, spacing: 12) {
+                GeometryReader { geo in
+                    let segmentSpacing: CGFloat = 3
+                    let segmentWidth = (geo.size.width - segmentSpacing * CGFloat(maxLayers - 1)) / CGFloat(maxLayers)
+                    let filledWidth  = segmentWidth * CGFloat(layerCount) + segmentSpacing * CGFloat(max(layerCount - 1, 0))
+
+                    ZStack(alignment: .leading) {
+                        // Empty segment track
+                        HStack(spacing: segmentSpacing) {
+                            ForEach(1...maxLayers, id: \.self) { _ in
+                                Capsule()
+                                    .fill(Color("gray20"))
+                                    .frame(width: segmentWidth, height: 8)
+                            }
+                        }
+
+                        // Filled bar that grows with progress
+                        if layerCount > 0 {
+                            Capsule()
+                                .fill(Color("buttonColor"))
+                                .frame(width: filledWidth, height: 8)
+                        }
+                    }
+                }
+                .frame(height: 8)
+
+                Text("\(layerCount)/\(maxLayers)")
+                    .font(.custom("Ubuntu-Bold", size: 22))
+                    .foregroundColor(Color("buttonColor"))
+                    .fixedSize()
+            }
+        }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 16)
+        .background(Color("fieldColor"), in: RoundedRectangle(cornerRadius: 16))
+        .compositingGroup()
+        .shadow(color: Color("buttonColor").opacity(0.9), radius: 0, x: 0, y: 6)
+        .padding(.horizontal, 16)
+        .padding(.bottom, 16)
     }
+}
 
-    func makeUIView(context: Context) -> ARView {
-        let arView = ARView(frame: .zero)
-        arView.environment.background = .color(.clear)
-        arView.backgroundColor = .clear
-        arView.isOpaque = false
+// MARK: - NoLayersPopup
 
-        let anchor = AnchorEntity(world: [0, 0, -2.8])
-        arView.scene.addAnchor(anchor)
+// Popup shown when the user hasn't earned any layers yet.
+struct NoLayersPopup: View {
+    @Binding var isPresented: Bool
 
-        do {
-            let building = try Entity.load(named: "Jisr3D")
-            building.scale = [0.3, 0.3, 0.3]
-            building.orientation *= simd_quatf(angle: +.pi / 18, axis: [1, 0, 0])
-            anchor.addChild(building)
+    var body: some View {
+        ZStack {
+            // Dimmed background
+            Color.black.opacity(0.35)
+                .ignoresSafeArea()
+                .onTapGesture { isPresented = false }
 
-            context.coordinator.building = building
+            VStack(spacing: 24) {
+                VStack(spacing: 12) {
+                    Text("No layers yet!")
+                        .font(.UbuntuBold(size: 22))
+                        .foregroundColor(.black)
+                        .multilineTextAlignment(.center)
 
-            for i in 1...18 {
-                let name = "layer_\(i)"
-                if let layer = building.findEntity(named: name) {
-                    context.coordinator.layers[i] = layer
-                    context.coordinator.originalTransforms[i] = layer.transform
-                    layer.isEnabled = i <= layerCount
-                } else {
-                    print("Layer not found: \(name)")
+                    Text("Complete rooms with your friends to earn layers and start building your bridge")
+                        .font(.Ubuntu(size: 15))
+                        .foregroundColor(.black.opacity(0.5))
+                        .multilineTextAlignment(.center)
+                        .lineSpacing(4)
+                }
+                .padding(.top, 10)
+
+                Button(action: { isPresented = false }) {
+                    Text("Got it!")
+                        .font(.UbuntuBold(size: 18))
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 54)
+                        .background(Color(red: 0.18, green: 0.18, blue: 0.18))
+                        .clipShape(RoundedRectangle(cornerRadius: 99))
                 }
             }
+            .padding(24)
+            .background(Color.white)
+            .clipShape(RoundedRectangle(cornerRadius: 32))
+            .padding(.horizontal, 36)
+            .shadow(color: .black.opacity(0.15), radius: 25, x: 0, y: 12)
+        }
+    }
+}
 
-            // ground stays visible all the time
-            if let ground = building.findEntity(named: "ground") {
-                ground.isEnabled = true
-            }
+// MARK: - BuildingSceneView | واجهة النموذج ثلاثي الأبعاد
 
-            context.coordinator.currentLayerCount = layerCount
+// SceneKit view that renders the 3D bridge model and supports left/right drag rotation.
+struct BuildingSceneView: UIViewRepresentable {
 
-        } catch {
-            print("Failed to load model: \(error)")
+    var layerCount: Int
+
+    func makeCoordinator() -> Coordinator { Coordinator() }
+
+    func makeUIView(context: Context) -> SCNView {
+
+        // MARK: Scene Setup
+        let scnView = SCNView(frame: .zero)
+        scnView.backgroundColor = .clear
+        scnView.isOpaque = false
+        scnView.autoenablesDefaultLighting = true
+        scnView.antialiasingMode = .multisampling4X
+        scnView.allowsCameraControl = false   // rotation is handled by our gesture
+
+        let scene = SCNScene()
+        scnView.scene = scene
+
+        guard let modelScene = SCNScene(named: "Jisr3D.usdz") else {
+            print("Failed to load Jisr3D.usdz | فشل تحميل النموذج")
+            return scnView
         }
 
-        return arView
+        // MARK: Node Hierarchy | تسلسل العقد
+        //
+        //  scene.rootNode
+        //    └── rotationNode   ← user drag rotates this around Y | يدور بإيماءة المستخدم حول محور Y
+        //          └── orientedNode  ← fixes Z-up USDZ to Y-up SceneKit | يصحح اتجاه الملف من Z-up إلى Y-up
+        //                └── modelNode  ← raw USDZ geometry | هندسة USDZ الخام
+
+        // Move all USDZ children into modelNode
+        let modelNode = SCNNode()
+        for child in modelScene.rootNode.childNodes {
+            child.removeFromParentNode()
+            modelNode.addChildNode(child)
+        }
+
+        // Center the model at its own origin using bounding box (computed in Z-up space)
+        let (minVec, maxVec) = modelNode.boundingBox
+        let center = SCNVector3(
+            (minVec.x + maxVec.x) / 2,
+            (minVec.y + maxVec.y) / 2,
+            (minVec.z + maxVec.z) / 2
+        )
+        let maxDimension = max(maxVec.x - minVec.x, maxVec.y - minVec.y, maxVec.z - minVec.z)
+        modelNode.position = SCNVector3(-center.x, -center.y, -center.z)
+
+        // Rotate -90° on X to convert the USDZ's Z-up axis to SceneKit's Y-up axis
+        let orientedNode = SCNNode()
+        orientedNode.eulerAngles = SCNVector3(-Float.pi / 2, 0, 0)
+        orientedNode.addChildNode(modelNode)
+
+        // Wrapper node — only this rotates when the user swipes
+        let rotationNode = SCNNode()
+        rotationNode.addChildNode(orientedNode)
+        scene.rootNode.addChildNode(rotationNode)
+
+        // MARK: Camera
+
+        let cameraNode = SCNNode()
+        cameraNode.camera = SCNCamera()
+        cameraNode.camera?.fieldOfView = 60
+
+        // Position camera elevated and in front for a nice perspective view
+        let fovRad   = Float(60) * Float.pi / 180
+        let distance = (maxDimension / 2) / tan(fovRad / 2) * 1.6
+        cameraNode.position = SCNVector3(0, distance * 0.4, distance)
+
+        // Keep camera pointed at the model center regardless of position
+        let lookAt = SCNLookAtConstraint(target: rotationNode)
+        lookAt.isGimbalLockEnabled = true
+        cameraNode.constraints = [lookAt]
+
+        scene.rootNode.addChildNode(cameraNode)
+        scnView.pointOfView = cameraNode
+
+        // MARK: Layers | الطبقات
+
+        // Find each named layer node and set initial visibility
+        for i in 1...LayerState.maxLayers {
+            let name = "layer_\(i)"
+            if let layer = modelNode.childNode(withName: name, recursively: true) {
+                context.coordinator.layers[i] = layer
+                context.coordinator.originalPositions[i] = layer.position
+                layer.isHidden = i > layerCount
+            }
+        }
+
+        // Ground is always visible
+        modelNode.childNode(withName: "ground", recursively: true)?.isHidden = false
+
+        context.coordinator.rotationNode = rotationNode
+        context.coordinator.currentLayerCount = layerCount
+
+        // MARK: Gesture
+
+        // Pan gesture for left/right model rotation
+        let pan = UIPanGestureRecognizer(
+            target: context.coordinator,
+            action: #selector(Coordinator.handlePan(_:))
+        )
+        scnView.addGestureRecognizer(pan)
+
+        return scnView
     }
 
-    func updateUIView(_ arView: ARView, context: Context) {
+    func updateUIView(_ scnView: SCNView, context: Context) {
         context.coordinator.updateLayers(to: layerCount)
     }
 
-    class Coordinator: NSObject {
-        var building: Entity?
-        var layers: [Int: Entity] = [:]
-        var originalTransforms: [Int: Transform] = [:]
-        var currentLayerCount: Int = 1
+    // MARK: - Coordinator | المنسق
 
+    // Handles gesture-driven rotation and animated layer transitions.
+    class Coordinator: NSObject {
+
+        var layers: [Int: SCNNode] = [:]
+        var originalPositions: [Int: SCNVector3] = [:]
+        var currentLayerCount: Int = 0
+        var rotationNode: SCNNode?
+
+        private var lastPanX: CGFloat = 0
+
+        // MARK: Rotation
+
+        // Rotates the model around the Y axis as the user drags horizontally.
+        @objc func handlePan(_ gesture: UIPanGestureRecognizer) {
+            if gesture.state == .began { lastPanX = 0 }
+            let translation = gesture.translation(in: gesture.view)
+            let delta = Float(translation.x - lastPanX) * 0.008   // sensitivity
+            lastPanX = translation.x
+            rotationNode?.eulerAngles.y += delta
+        }
+
+        // MARK: Layer Animation
+
+        // Shows or hides a single layer with a drop-in / drop-out animation.
         func updateLayers(to newCount: Int) {
             guard newCount != currentLayerCount else { return }
 
             if newCount > currentLayerCount {
-                let addedLayer = newCount
-                if let layer = layers[addedLayer],
-                   let original = originalTransforms[addedLayer] {
-                    layer.isEnabled = true
-                    var startTransform = original
-                    startTransform.translation.y += 0.2
-                    layer.transform = startTransform
-                    layer.move(
-                        to: original,
-                        relativeTo: layer.parent,
-                        duration: 0.4,
-                        timingFunction: .easeInOut
-                    )
+                // Drop the new layer in from above
+                let index = newCount
+                if let layer = layers[index], let original = originalPositions[index] {
+                    layer.isHidden = false
+                    layer.position = SCNVector3(original.x, original.y + 0.2, original.z)
+                    SCNTransaction.begin()
+                    SCNTransaction.animationDuration = 0.4
+                    SCNTransaction.animationTimingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+                    layer.position = original
+                    SCNTransaction.commit()
                 }
             } else {
-                let removedLayer = currentLayerCount
-                if let layer = layers[removedLayer],
-                   let original = originalTransforms[removedLayer] {
-                    var downTransform = original
-                    downTransform.translation.y -= 0.2
-                    layer.move(
-                        to: downTransform,
-                        relativeTo: layer.parent,
-                        duration: 0.4,
-                        timingFunction: .easeInOut
-                    )
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
-                        layer.isEnabled = false
-                        layer.transform = original
+                // Drop the removed layer out downward
+                let index = currentLayerCount
+                if let layer = layers[index], let original = originalPositions[index] {
+                    SCNTransaction.begin()
+                    SCNTransaction.animationDuration = 0.4
+                    SCNTransaction.animationTimingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+                    SCNTransaction.completionBlock = {
+                        layer.isHidden = true
+                        layer.position = original
                     }
+                    layer.position = SCNVector3(original.x, original.y - 0.2, original.z)
+                    SCNTransaction.commit()
                 }
             }
 
@@ -258,19 +366,7 @@ struct BuildingRealityView: UIViewRepresentable {
     }
 }
 
-#Preview("0 layers") {
-    NavigationStack {
-        ModelPage()
-            .environmentObject({ let s = LayerState(); s.layerCount = 0; return s }())
-    }
-}
-
-#Preview("5 layers") {
-    NavigationStack {
-        ModelPage()
-            .environmentObject({ let s = LayerState(); s.layerCount = 5; return s }())
-    }
-}
+// MARK: - Preview
 
 #Preview("18 layers (complete)") {
     NavigationStack {
