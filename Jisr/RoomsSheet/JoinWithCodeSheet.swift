@@ -7,12 +7,14 @@
 
 import SwiftUI
 import SwiftData
-
+import CloudKit
 
 struct JoinWithCodeSheet: View {
     @Binding var isPresented: Bool
     @State private var roomCode: String = ""
     @FocusState private var isTextFieldFocused: Bool
+    @State private var isLoading: Bool = false      // ← أضف
+    @State private var errorMessage: String = ""
     
 //    var onJoined: () -> Void = {}
     
@@ -95,7 +97,58 @@ struct JoinWithCodeSheet: View {
         .onAppear {
             isTextFieldFocused = true
         }
+        
+        
     }
+    
+    func joinRoom() async {
+        isLoading = true
+        errorMessage = ""
+        
+        let ckContainer = CKContainer(identifier: "iCloud.com.app.jisr")
+        let publicDB = ckContainer.publicCloudDatabase
+        
+        let predicate = NSPredicate(format: "CD_code == %@", roomCode)
+        let query = CKQuery(recordType: "CD_Room", predicate: predicate)
+        
+        do {
+            let result = try await publicDB.records(matching: query)
+            let records = result.matchResults.compactMap { try? $0.1.get() }
+            
+            guard let record = records.first else {
+                errorMessage = "❌ الكود غلط، تحقق منه"
+                isLoading = false
+                return
+            }
+            
+            // أنشئ الروم محلياً على جهاز شخص ٢
+            let room = Room(
+                name: record["CD_name"] as? String ?? "",
+                code: roomCode,
+                category: record["CD_category"] as? String ?? "",
+                location: record["CD_location"] as? String ?? "",
+                maxPhotos: record["CD_maxPhotos"] as? Int ?? 3
+            )
+            context.insert(room)
+            
+            let userDescriptor = FetchDescriptor<User>()
+            if let currentUser = try? context.fetch(userDescriptor).first {
+                let participant = RoomParticipant(user: currentUser, room: room)
+                context.insert(participant)
+            }
+            
+            try? context.save()
+            onJoined(room)
+            isPresented = false
+            
+        } catch {
+            errorMessage = "تأكد من الإنترنت وحاول مرة ثانية"
+            print("❌ CloudKit error: \(error)")
+        }
+        
+        isLoading = false
+    }
+
 }
 
 #Preview {

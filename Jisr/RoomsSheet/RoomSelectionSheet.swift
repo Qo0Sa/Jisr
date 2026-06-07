@@ -11,6 +11,7 @@
 
 import SwiftUI
 import SwiftData
+import CloudKit
 
 struct RoomSelectionSheet: View {
     @Environment(\.modelContext) private var context
@@ -21,7 +22,7 @@ struct RoomSelectionSheet: View {
     @State private var isOutdoor: Bool = true
     @State private var photoLimit: Int = 3
     
-//    var onRoomCreated: () -> Void = {}
+    //    var onRoomCreated: () -> Void = {}
     var onRoomCreated: (Room) -> Void = { _ in }
     
     var body: some View {
@@ -184,26 +185,46 @@ struct RoomSelectionSheet: View {
             category: selectedCategory,
             location: isOutdoor ? "Outdoor" : "Indoor",
             maxPhotos: photoLimit
-            
         )
         
         context.insert(newRoom)
+        
         let descriptor = FetchDescriptor<User>()
-
         if let currentUser = try? context.fetch(descriptor).first {
             newRoom.createdBy = currentUser
-            let hostParticipant = RoomParticipant(
-                user: currentUser,
-                room: newRoom
-            )
-
+            let hostParticipant = RoomParticipant(user: currentUser, room: newRoom)
             context.insert(hostParticipant)
         }
-
+        
         try? context.save()
+        
+        // ✅ ارفع الروم في CloudKit Public عشان شخص ٢ يشوفها
+        saveToCloudKit(room: newRoom)
+        
         isPresented = false
-//        onRoomCreated()
         onRoomCreated(newRoom)
+    }
+    
+    private func saveToCloudKit(room: Room) {
+        let container = CKContainer(identifier: "iCloud.com.app.jisr")
+        let publicDB = container.publicCloudDatabase
+        
+        let record = CKRecord(recordType: "CD_Room")
+        record["CD_name"] = room.name
+        record["CD_code"] = room.code
+        record["CD_category"] = room.category
+        record["CD_location"] = room.location
+        record["CD_maxPhotos"] = room.maxPhotos
+        record["CD_isStarted"] = 0
+        record["CD_isClosed"] = 0
+        
+        publicDB.save(record) { _, error in
+            if let error = error {
+                print("❌ CloudKit error: \(error)")
+            } else {
+                print("✅ الروم اتحفظت: \(room.code)")
+            }
+        }
     }
 }
 

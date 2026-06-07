@@ -7,6 +7,7 @@
 
 import SwiftUI
 import SwiftData
+import CloudKit
 
 @main
 struct JisrApp: App {
@@ -18,7 +19,11 @@ struct JisrApp: App {
             schema: schema,
             cloudKitDatabase: .automatic
         )
-        return try! ModelContainer(for: schema, configurations: config)
+        do {
+            return try ModelContainer(for: schema, configurations: config)
+        } catch {
+            fatalError("Failed to create container: \(error)")
+        }
     }()
 
     var body: some Scene {

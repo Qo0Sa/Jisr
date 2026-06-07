@@ -186,6 +186,12 @@ struct MainView: View {
                 Button("Cancel", role: .cancel) { }
             }
         }
+        .onAppear {
+            let descriptor = FetchDescriptor<Room>()
+            let rooms = try? context.fetch(descriptor)
+            print("عدد الرومز: \(rooms?.count ?? 0)")
+            rooms?.forEach { print("روم: \($0.name) - كود: \($0.code)") }
+        }
     }
 }
 
@@ -496,4 +502,8 @@ struct ProfileAvatarView: View {
     MainView()
         .environmentObject(LayerState())
         .modelContainer(for: [User.self, Room.self, Photo.self], inMemory: true)
+    
+    
 }
+
+
