@@ -249,15 +249,16 @@ final class CameraManager: NSObject, ObservableObject, AVCapturePhotoCaptureDele
 
         session.commitConfiguration()
 
-        DispatchQueue.global(qos: .userInitiated).async {
-            self.session.startRunning()
-
-            DispatchQueue.main.async {
-                self.objectWillChange.send()
-            }
-
-            print("✅ SESSION RUNNING = \(self.session.isRunning)")
-        }
+//        DispatchQueue.global(qos: .userInitiated).async {
+//            self.session.startRunning()
+//
+//            DispatchQueue.main.async {
+//                self.objectWillChange.send()
+//            }
+//
+//            print("✅ SESSION RUNNING = \(self.session.isRunning)")
+//        }
+        
     }
     
     func switchCamera() {

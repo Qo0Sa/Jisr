@@ -240,14 +240,31 @@ struct DashedCard<Content: View>: View {
 struct RoomsListView: View {
     let rooms: [Room]
     @Binding var showRoomOptions: Bool
+    @Query private var users: [User]  // ← أضف هذا
+
     var body: some View {
 
         ScrollView(showsIndicators: false) {
             VStack(spacing: -40) {  // ← spacing سالب عشان يتغطى
                 
                 ForEach(Array(rooms.enumerated()), id: \.element.id) { index, room in
-                    RoomCardView(room: room)
-                        .zIndex(Double(index))  // ← الأول فوق
+                    let isHost = room.createdBy?.persistentModelID == users.first?.persistentModelID
+                    
+                    NavigationLink(destination: {
+                        if room.isStarted {
+                            RoomContainer(room: room, isHost: isHost)
+                        } else {
+                            if isHost {
+                                WaitingRoomView(waitingDestination: .constant(nil), room: room)
+                            } else {
+                                WaitingRoomForNotHostView(room: room)
+                            }
+                        }
+                    }) {
+                        RoomCardView(room: room)
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                    .zIndex(Double(index))
                 }
                 
                 DashedCard {
@@ -267,6 +284,7 @@ struct RoomsListView: View {
             .padding(.top, 40)
         }
     }
+    
 }
 // MARK: - كارد الروم
 struct RoomCardView: View {
