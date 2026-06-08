@@ -16,9 +16,12 @@ import SwiftUI
 
 struct FeedCard: View {
     let userName: String
+    let userImageData: Data?
     let thoughtText: String
     let emojiReaction: String
     let imageData: Data?
+
+    @State private var isExpanded = false
     
     var body: some View {
         VStack(spacing: 0) {
@@ -54,23 +57,29 @@ struct FeedCard: View {
                     .clipShape(RoundedRectangle(cornerRadius: 16))
                 
                 // الطبقة الشفافة السفلية العائمة (اسم المستخدم والريأكشن)
-                HStack {
+              
                     HStack(spacing: 6) {
                         Circle()
-                            .fill(Color.black.opacity(0.1))
+                            .fill(Color.black.opacity(0.15))
                             .frame(width: 24, height: 24)
-                            .overlay(Image(systemName: "person.fill").font(.system(size: 10)).foregroundColor(.white))
-                        
+                            .overlay {
+                                if let data = userImageData, let uiImage = UIImage(data: data) {
+                                    Image(uiImage: uiImage)
+                                        .resizable()
+                                        .scaledToFill()
+                                        .clipShape(Circle())
+                                } else {
+                                    Text(String(userName.prefix(1)).uppercased())
+                                        .font(.system(size: 10, weight: .bold))
+                                        .foregroundColor(.white)
+                                }
+                            }
+
                         Text(userName)
                             .font(.UbuntuBold(size: 12))
                             .foregroundColor(.black.opacity(0.8))
                     }
                     
-                    Spacer()
-                    
-                    Text(emojiReaction)
-                        .font(.system(size: 16))
-                }
                 .padding(.horizontal, 10)
                 .padding(.vertical, 8)
                 .background(.ultraThinMaterial) // تأثير Glassmorphic ناعم جداً
@@ -80,15 +89,44 @@ struct FeedCard: View {
             
             // التفكير اللحظي المكتوب أسفل كارد البولاريد
             if !thoughtText.isEmpty {
-                Text(thoughtText)
-                    .font(.Ubuntu(size: 12))
-                    .foregroundColor(.black.opacity(0.6))
-                    .lineLimit(2)
-                    .multilineTextAlignment(.leading)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack(alignment: .top) {
+                        Text(thoughtText)
+                            .font(.Ubuntu(size: 12))
+                            .foregroundColor(.black.opacity(0.6))
+                            .lineLimit(isExpanded ? nil : 2)
+                            .multilineTextAlignment(.leading)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+
+                        Text(emojiReaction)
+                            .font(.system(size: 16))
+                    }
                     .padding(.horizontal, 8)
                     .padding(.top, 10)
-                    .padding(.bottom, 6)
+                    .padding(.bottom, isExpanded ? 2 : 6)
+
+                    if isExpanded {
+                        Text("Show less")
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundColor(.black.opacity(0.35))
+                            .padding(.horizontal, 8)
+                            .padding(.bottom, 6)
+                    }
+                }
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                        isExpanded.toggle()
+                    }
+                }
+            } else {
+                HStack {
+                    Spacer()
+                    Text(emojiReaction)
+                        .font(.system(size: 16))
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 8)
+                }
             }
         }
         .padding(8)
@@ -102,7 +140,8 @@ struct FeedCard: View {
     ZStack {
         Color("Backgroundcolor").ignoresSafeArea()
         FeedCard(
-            userName: "myname",
+            userName: "Sara",
+            userImageData: nil,
             thoughtText: "text",
             emojiReaction: "😆",
             imageData: nil

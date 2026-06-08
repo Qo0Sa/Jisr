@@ -58,6 +58,7 @@ struct RoomFeed: View {
                                 // 💡 تفعيل عرض كارد البولاريد الحي بسحب اسم المستخدم وصورته والكومنت المكتوب حياً
                                 FeedCard(
                                     userName: photo.user?.name ?? "Member",
+                                    userImageData: photo.user?.profileImage,
                                     thoughtText: photo.thought.isEmpty ? "Capturing the moment!" : photo.thought,
                                     emojiReaction: photo.emoji,
                                     imageData: photo.imageData
