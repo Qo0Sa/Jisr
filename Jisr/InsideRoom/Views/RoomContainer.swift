@@ -60,13 +60,19 @@ struct RoomContainer: View {
                             return
                         }
 
-                        let currentUser = users.first
+                        guard let currentUser = users.first else {
+                            print("No user found")
+                            return
+                        }
+
 
                         let newPhoto = Photo(
                             imageData: imageData,
                             thought: thought,
-                            room: room, user: <#User#>
+                            room: room,
+                            user: currentUser
                         )
+                        
 
                         context.insert(newPhoto)
 

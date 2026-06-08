@@ -170,9 +170,14 @@ struct RoomCamera: View {
 //                onPhotoCaptured(image)
 //            }
 //        }
+//        .onAppear {
+//            camera.startSession()
+//
+//            camera.onPhotoCaptured = { image in
+//                onPhotoCaptured(image)
+//            }
+//        }
         .onAppear {
-            camera.startSession()
-
             camera.onPhotoCaptured = { image in
                 onPhotoCaptured(image)
             }
@@ -189,7 +194,8 @@ final class CameraManager: NSObject, ObservableObject, AVCapturePhotoCaptureDele
     var onPhotoCaptured: ((UIImage) -> Void)?
     private var currentInput: AVCaptureDeviceInput?
     private var currentPosition: AVCaptureDevice.Position = .back
-    
+    private var isConfigured = false
+
 //    override init() {
 //        super.init()
 //        configure()
@@ -250,7 +256,8 @@ final class CameraManager: NSObject, ObservableObject, AVCapturePhotoCaptureDele
         }
 
         session.commitConfiguration()
-
+        isConfigured = true
+        
 //        DispatchQueue.global(qos: .userInitiated).async {
 //            self.session.startRunning()
 //
@@ -337,11 +344,24 @@ final class CameraManager: NSObject, ObservableObject, AVCapturePhotoCaptureDele
     }
     
     
+//    func startSession() {
+//        if !session.isRunning {
+//            DispatchQueue.global(qos: .userInitiated).async {
+//                self.session.startRunning()
+//            }
+//        }
+//    }
     func startSession() {
-        if !session.isRunning {
-            DispatchQueue.global(qos: .userInitiated).async {
-                self.session.startRunning()
-            }
+
+        guard isConfigured else {
+            print("⚠️ Session not configured yet")
+            return
+        }
+
+        guard !session.isRunning else { return }
+
+        DispatchQueue.global(qos: .userInitiated).async {
+            self.session.startRunning()
         }
     }
     func stopSession() {
