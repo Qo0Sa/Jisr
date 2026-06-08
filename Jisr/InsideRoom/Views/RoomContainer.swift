@@ -69,6 +69,7 @@ struct RoomContainer: View {
                         let newPhoto = Photo(
                             imageData: imageData,
                             thought: thought,
+                            emoji: emoji,
                             room: room,
                             user: currentUser
                         )

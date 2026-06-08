@@ -162,20 +162,22 @@ class Photo {
 
     var imageData: Data? = nil
     var thought: String = ""
+    var emoji: String = "😊"
 
     var uploadedAt: Date = Date()
     var room: Room? = nil
     var user: User? = nil
 
-    
     init(
         imageData: Data?,
         thought: String,
+        emoji: String,
         room: Room,
         user: User
     ) {
         self.imageData = imageData
         self.thought = thought
+        self.emoji = emoji
         self.uploadedAt = Date()
         self.room = room
         self.user = user

@@ -27,36 +27,21 @@ struct RoomFeed: View {
         GridItem(.flexible(), spacing: 14),
         GridItem(.flexible(), spacing: 14)
     ]
-    @State private var goToMain = false
-
     var body: some View {
         ZStack {
             VStack(spacing: 0) {
-                // ابحثي عن هذا الجزء وغيري الـ spacing والـ padding
-                HStack(spacing: 0) { // غيري السبيسينق لـ 0
-
-                    Button(action: {
-                        goToMain = true
-                    }) {
-                        Image(systemName: "chevron.left")
-                            .font(.system(size: 24, weight: .bold))
-                            .foregroundColor(.black)
+                RoomHeader(
+                    currentProgress: roomPhotos.count,
+                    maxPhotos: room.maxPhotos,
+                    isShowingFeed: isShowingFeed,
+                    onGalleryToggle: nil,
+                    room: room,
+                    onBack: {
+                        withAnimation(.easeInOut(duration: 0.25)) {
+                            isShowingFeed = false
+                        }
                     }
-                    .padding(.leading, 24) // مسافة زر العودة من الحافة
-
-                    // ✅ استبدلي استدعاء الهيدر في ملف RoomFeed.swift بهذا بالضبط:
-                    RoomHeader(
-                        currentProgress: roomPhotos.count,
-                        maxPhotos: room.maxPhotos,
-                        isShowingFeed: isShowingFeed,
-                        onGalleryToggle: {
-                            withAnimation(.easeInOut(duration: 0.25)) {
-                                isShowingFeed.toggle() // يغير الحالة تلقائياً
-                            }
-                        },
-                        room: room // 👈 هذا هو السطر السحري اللي ضفناه عشان نربطه ببيانات الكلاود الحقيقية
-                    )
-                }
+                )
                 .padding(.vertical, 12)
                 
                 ScrollView(.vertical, showsIndicators: false) {
@@ -74,7 +59,7 @@ struct RoomFeed: View {
                                 FeedCard(
                                     userName: photo.user?.name ?? "Member",
                                     thoughtText: photo.thought.isEmpty ? "Capturing the moment!" : photo.thought,
-                                    emojiReaction: "🤩",
+                                    emojiReaction: photo.emoji,
                                     imageData: photo.imageData
                                 )
                             }
@@ -117,9 +102,6 @@ struct RoomFeed: View {
                 )
                 .transition(.opacity)
             }
-        }
-        .navigationDestination(isPresented: $goToMain) {
-            MainView()
         }
         .background(Color("Backgroundcolor").ignoresSafeArea())
         .navigationBarBackButtonHidden(true)

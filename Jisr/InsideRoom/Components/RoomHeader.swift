@@ -133,7 +133,7 @@ struct RoomHeader: View {
     let currentProgress: Int
     let maxPhotos: Int
     let isShowingFeed: Bool
-    let onGalleryToggle: () -> Void
+    var onGalleryToggle: (() -> Void)? = nil
     let room: Room
     var onBack: (() -> Void)? = nil
     
@@ -275,8 +275,20 @@ struct RoomHeader: View {
                         .font(.system(size: 16, weight: .medium))
                         .foregroundColor(.white)
                         .padding(.leading, 12)
-                    
-                    Button(action: onGalleryToggle) {
+
+                    if let onGalleryToggle {
+                        Button(action: onGalleryToggle) {
+                            Circle()
+                                .fill(Color.white)
+                                .frame(width: 36, height: 36)
+                                .overlay(
+                                    Image(systemName: isShowingFeed ? "camera.fill" : "photo.on.rectangle.angled")
+                                        .foregroundColor(.black)
+                                        .font(.system(size: 16))
+                                )
+                        }
+                        .padding(.trailing, 4)
+                    } else {
                         Circle()
                             .fill(Color.white)
                             .frame(width: 36, height: 36)
@@ -285,8 +297,8 @@ struct RoomHeader: View {
                                     .foregroundColor(.black)
                                     .font(.system(size: 16))
                             )
+                            .padding(.trailing, 4)
                     }
-                    .padding(.trailing, 4)
                 }
                 .frame(height: 44)
                 .background(warmGray)
