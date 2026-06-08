@@ -134,9 +134,8 @@ struct RoomHeader: View {
     let maxPhotos: Int
     let isShowingFeed: Bool
     let onGalleryToggle: () -> Void
-    
-    // 1. استقبال موديل الروم الحقيقي المسجل في الكلاود والـ SwiftData
     let room: Room
+    var onBack: (() -> Void)? = nil
     
     // 2. حالة للتحكم بتمدد وانكماش الكبسولة عند الضغط
     @State private var isExpanded = false
@@ -157,8 +156,20 @@ struct RoomHeader: View {
     }
     
     var body: some View {
-        HStack(alignment: .top, spacing: 0) {
-            
+        HStack(alignment: .top, spacing: 8) {
+
+            if let onBack {
+                Button(action: onBack) {
+                    Image(systemName: "chevron.left")
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundColor(.white)
+                        .frame(width: 44, height: 44)
+                        .background(warmGray)
+                        .clipShape(Circle())
+                }
+                .buttonStyle(EmptyButtonStyle())
+            }
+
             // كبسولة الأعضاء الحقيقية: عند الضغط عليها تتمدد بأنيميشن مرن
             Button(action: {
                 withAnimation(.spring(response: 0.4, dampingFraction: 0.75)) {

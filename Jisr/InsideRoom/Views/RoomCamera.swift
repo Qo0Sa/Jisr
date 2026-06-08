@@ -22,25 +22,25 @@ struct RoomCamera: View {
     let room: Room
     @Binding var isShowingFeed: Bool
     let onPhotoCaptured: (UIImage) -> Void
-    
+
+    @Environment(\.dismiss) private var dismiss
     @State private var isFlashOn = false
     @State private var zoomScale: String = "1x"
     @StateObject private var camera = CameraManager()
 
     var body: some View {
         VStack(spacing: 0) {
-            // 1. الهيدر العلوي المشترك (يمرر العداد ويفعل التبديل للمعرض الحي)
-            // ✅ استبدلي استدعاء الهيدر في ملف RoomCamera.swift بهذا الكود بالضبط:
             RoomHeader(
                 currentProgress: room.photos?.count ?? 0,
                 maxPhotos: room.maxPhotos,
                 isShowingFeed: isShowingFeed,
                 onGalleryToggle: {
                     withAnimation(.easeInOut(duration: 0.25)) {
-                        isShowingFeed = true // الانتقال لشبكة صور الروم الحية
+                        isShowingFeed = true
                     }
                 },
-                room: room // 👈 هذا السطر السحري اللي ضفناه الحين عشان يشتغل الهيدر داخل الكاميرا حياً ومربوط بالكلاود!
+                room: room,
+                onBack: { dismiss() }
             )
             
             // 2. كارد التحدي العائم (PromptCard المتروك للـ CoreML لاحقاً)
@@ -178,6 +178,7 @@ struct RoomCamera: View {
 //            }
 //        }
         .onAppear {
+            camera.startSession()
             camera.onPhotoCaptured = { image in
                 onPhotoCaptured(image)
             }
