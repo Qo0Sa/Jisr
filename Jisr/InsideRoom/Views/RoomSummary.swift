@@ -20,7 +20,6 @@ struct RoomSummary: View {
             HStack {
                 Button(action: {
                     NotificationCenter.default.post(name: NSNotification.Name("DismissRoomFlow"), object: nil)
-                    dismiss()
                 }) {
                     Image(systemName: "chevron.left").font(.system(size: 22, weight: .bold)).foregroundColor(.black)
                 }

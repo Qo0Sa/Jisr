@@ -51,6 +51,7 @@ struct SwipeablePhotoStack: View {
                     )
             }
             .frame(height: 380)
+            .padding(.top, 44)        // room for background cards peeking above
             .padding(.horizontal, 24)
             .animation(.spring(response: 0.35, dampingFraction: 0.75), value: currentIndex)
 
