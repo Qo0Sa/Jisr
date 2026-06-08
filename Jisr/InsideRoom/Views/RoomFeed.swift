@@ -31,11 +31,11 @@ struct RoomFeed: View {
         ZStack {
             VStack(spacing: 0) {
                 RoomHeader(
+                    room: room,
                     currentProgress: roomPhotos.count,
                     maxPhotos: room.maxPhotos,
                     isShowingFeed: isShowingFeed,
                     onGalleryToggle: nil,
-                    room: room,
                     onBack: {
                         withAnimation(.easeInOut(duration: 0.25)) {
                             isShowingFeed = false

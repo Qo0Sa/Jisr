@@ -132,10 +132,9 @@ struct WaitingRoomForNotHostView: View {
         }
         
         .navigationDestination(isPresented: $goToCamera) {
-            RoomCamera(
+            CameraView(
                 room: room,
-                isShowingFeed: .constant(false),
-                onPhotoCaptured: { _ in }
+                isHost: false
             )
         }
         .onChange(of: room.isStarted) { _, started in

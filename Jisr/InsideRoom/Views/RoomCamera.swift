@@ -4,13 +4,10 @@
 //
 //  Created by Wteen Alghamdy on 04/12/1447 AH.
 //
+//  ⚠️ DISABLED — replaced by CameraView + CameraSession in InsideRoom/sara/Cameraview.swift
+//
 
-//
-//  RoomCamera.swift
-//  Jisr
-//
-//  Created by Wteen Alghamdy on 01/12/1447 AH.
-//
+#if false
 
 import SwiftUI
 import SwiftData
@@ -157,27 +154,22 @@ struct RoomCamera: View {
 }
 
 
-final class CameraManager: NSObject, ObservableObject, AVCapturePhotoCaptureDelegate {    let session = AVCaptureSession()
+final class CameraManager: NSObject, ObservableObject, AVCapturePhotoCaptureDelegate {
+    let session = AVCaptureSession()
     private let output = AVCapturePhotoOutput()
     var onPhotoCaptured: ((UIImage) -> Void)?
     private var currentInput: AVCaptureDeviceInput?
     private var currentPosition: AVCaptureDevice.Position = .back
     private var isConfigured = false
 
-//    override init() {
-//        super.init()
-//        configure()
-//    }
     override init() {
         super.init()
 
         let status = AVCaptureDevice.authorizationStatus(for: .video)
 
         switch status {
-
         case .authorized:
             configure()
-
         case .notDetermined:
             AVCaptureDevice.requestAccess(for: .video) { granted in
                 if granted {
@@ -186,131 +178,106 @@ final class CameraManager: NSObject, ObservableObject, AVCapturePhotoCaptureDele
                     }
                 }
             }
-
         default:
             print("❌ Camera permission denied")
         }
     }
-    
+
     private func configure() {
-
-        print("✅ CONFIGURE CALLED")
-
         session.beginConfiguration()
 
         guard let device = AVCaptureDevice.default(
             .builtInWideAngleCamera,
             for: .video,
             position: .back
-        ) else {
-            print("❌ NO CAMERA DEVICE")
-            return
-        }
+        ) else { return }
 
-        guard let input = try? AVCaptureDeviceInput(device: device) else {
-            print("❌ FAILED INPUT")
-            return
-        }
+        guard let input = try? AVCaptureDeviceInput(device: device) else { return }
 
         if session.canAddInput(input) {
             session.addInput(input)
             currentInput = input
-            print("✅ INPUT ADDED")
         }
 
         if session.canAddOutput(output) {
             session.addOutput(output)
-            print("✅ OUTPUT ADDED")
         }
 
         session.commitConfiguration()
         isConfigured = true
-        
-//        DispatchQueue.global(qos: .userInitiated).async {
-//            self.session.startRunning()
-//
-//            DispatchQueue.main.async {
-//                self.objectWillChange.send()
-//            }
-//
-//            print("✅ SESSION RUNNING = \(self.session.isRunning)")
-//        }
-        
     }
-    
+
     func switchCamera() {
-            session.beginConfiguration()
-            
-            if let currentInput = currentInput {
-                session.removeInput(currentInput)
-            }
-            
-            currentPosition = (currentPosition == .back) ? .front : .back
-            
-            guard let newDevice = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: currentPosition) else { return }
-            guard let newInput = try? AVCaptureDeviceInput(device: newDevice) else { return }
-            
-            if session.canAddInput(newInput) {
-                session.addInput(newInput)
-                currentInput = newInput
-            } else {
-                // إعادة العدسة الخلفية كحماية في حال تعطل الأمامية
-                if let currentInput = currentInput { session.addInput(currentInput) }
-            }
-            
-            session.commitConfiguration()
-        }
-        
-        // 💡 وظيفة التحكم بكشاف الهاتف الفعلي أثناء التصوير
-        func toggleFlash(turnOn: Bool) {
-            guard let device = AVCaptureDevice.default(for: .video), device.hasTorch else { return }
-            do {
-                try device.lockForConfiguration()
-                device.torchMode = turnOn ? .on : .off
-                device.unlockForConfiguration()
-            } catch {
-                print("❌ Torch alignment error: \(error.localizedDescription)")
-            }
-        }
-        
-        func setZoom(scale: String) {
-            switch scale {
-            case ".5x":
-                // Ultra-wide is a separate physical lens — must swap the camera input
-                switchToLens(type: .builtInUltraWideCamera, zoomFactor: 1.0)
-            case "2x":
-                switchToLens(type: .builtInWideAngleCamera, zoomFactor: 2.0)
-            default: // "1x"
-                switchToLens(type: .builtInWideAngleCamera, zoomFactor: 1.0)
-            }
+        session.beginConfiguration()
+
+        if let currentInput = currentInput {
+            session.removeInput(currentInput)
         }
 
-        private func switchToLens(type: AVCaptureDevice.DeviceType, zoomFactor: CGFloat) {
-            guard let device = AVCaptureDevice.default(type, for: .video, position: currentPosition) else { return }
-            guard let newInput = try? AVCaptureDeviceInput(device: device) else { return }
+        currentPosition = (currentPosition == .back) ? .front : .back
 
-            session.beginConfiguration()
-            if let currentInput { session.removeInput(currentInput) }
-            if session.canAddInput(newInput) {
-                session.addInput(newInput)
-                currentInput = newInput
-            }
-            session.commitConfiguration()
+        guard let newDevice = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: currentPosition) else { return }
+        guard let newInput = try? AVCaptureDeviceInput(device: newDevice) else { return }
 
-            do {
-                try device.lockForConfiguration()
-                device.videoZoomFactor = max(device.minAvailableVideoZoomFactor,
-                                             min(zoomFactor, device.activeFormat.videoMaxZoomFactor))
-                device.unlockForConfiguration()
-            } catch {
-                print("❌ Zoom error: \(error.localizedDescription)")
-            }
+        if session.canAddInput(newInput) {
+            session.addInput(newInput)
+            currentInput = newInput
+        } else {
+            if let currentInput = currentInput { session.addInput(currentInput) }
         }
-        
+
+        session.commitConfiguration()
+    }
+
+    func toggleFlash(turnOn: Bool) {
+        guard let device = AVCaptureDevice.default(for: .video), device.hasTorch else { return }
+        do {
+            try device.lockForConfiguration()
+            device.torchMode = turnOn ? .on : .off
+            device.unlockForConfiguration()
+        } catch {
+            print("❌ Torch alignment error: \(error.localizedDescription)")
+        }
+    }
+
+    func setZoom(scale: String) {
+        switch scale {
+        case ".5x":
+            switchToLens(type: .builtInUltraWideCamera, zoomFactor: 1.0)
+        case "2x":
+            switchToLens(type: .builtInWideAngleCamera, zoomFactor: 2.0)
+        default:
+            switchToLens(type: .builtInWideAngleCamera, zoomFactor: 1.0)
+        }
+    }
+
+    private func switchToLens(type: AVCaptureDevice.DeviceType, zoomFactor: CGFloat) {
+        guard let device = AVCaptureDevice.default(type, for: .video, position: currentPosition) else { return }
+        guard let newInput = try? AVCaptureDeviceInput(device: device) else { return }
+
+        session.beginConfiguration()
+        if let currentInput { session.removeInput(currentInput) }
+        if session.canAddInput(newInput) {
+            session.addInput(newInput)
+            currentInput = newInput
+        }
+        session.commitConfiguration()
+
+        do {
+            try device.lockForConfiguration()
+            device.videoZoomFactor = max(device.minAvailableVideoZoomFactor,
+                                         min(zoomFactor, device.activeFormat.videoMaxZoomFactor))
+            device.unlockForConfiguration()
+        } catch {
+            print("❌ Zoom error: \(error.localizedDescription)")
+        }
+    }
+
     func capturePhoto() {
         let settings = AVCapturePhotoSettings()
         output.capturePhoto(with: settings, delegate: self)
     }
+
     func photoOutput(
         _ output: AVCapturePhotoOutput,
         didFinishProcessingPhoto photo: AVCapturePhoto,
@@ -325,57 +292,20 @@ final class CameraManager: NSObject, ObservableObject, AVCapturePhotoCaptureDele
             self.onPhotoCaptured?(image)
         }
     }
-    
-    
-//    func startSession() {
-//        if !session.isRunning {
-//            DispatchQueue.global(qos: .userInitiated).async {
-//                self.session.startRunning()
-//            }
-//        }
-//    }
+
     func startSession() {
-
-        guard isConfigured else {
-            print("⚠️ Session not configured yet")
-            return
-        }
-
+        guard isConfigured else { return }
         guard !session.isRunning else { return }
-
         DispatchQueue.global(qos: .userInitiated).async {
             self.session.startRunning()
         }
     }
+
     func stopSession() {
         if session.isRunning {
             session.stopRunning()
         }
     }
 }
-#Preview {
-    // 1. إنشاء حاوية بيانات وهمية في الذاكرة المؤقتة فقط للـ Preview
-    let config = ModelConfiguration(isStoredInMemoryOnly: true)
-    let container = try! ModelContainer(for: Room.self, User.self, Photo.self, configurations: config)
-    
-    // 2. تجهيز غرفة تجريبية
-    let sampleRoom = Room(
-        name: "Mission District Mural Hunt",
-        code: "JSR-777",
-        category: "Creative",
-        location: "Outdoor",
-        maxPhotos: 9
-    )
-    
-    // إدخال الغرفة في الـ Context المؤقت
-    container.mainContext.insert(sampleRoom)
-    
-    return RoomCamera(
-        room: sampleRoom,
-        isShowingFeed: .constant(false),
-        onPhotoCaptured: { image in
-            print("Photo captured successfully")
-        }
-    )
-    .modelContainer(container)
-}
+
+#endif

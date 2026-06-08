@@ -278,7 +278,7 @@ struct WaitingRoomView: View {
         }
         
         .navigationDestination(isPresented: $goToCamera) {
-            RoomContainer(
+            CameraView(
                   room: room,
                   isHost: true
               )

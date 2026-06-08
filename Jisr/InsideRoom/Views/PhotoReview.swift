@@ -4,29 +4,25 @@
 //
 //  Created by Wteen Alghamdy on 04/12/1447 AH.
 //
+//  ⚠️ DISABLED — replaced by PhotoPreviewView in InsideRoom/sara/PhotoPreviewView.swift
+//
 
-//
-//  PhotoReview.swift
-//  Jisr
-//
-//  Created by Wteen Alghamdy on 01/12/1447 AH.
-//
+#if false
 
 import SwiftUI
 
 struct PhotoReview: View {
     let capturedImage: UIImage
     let onCancel: () -> Void
-    let onSave: (String, String) -> Void // تمرير النص والإيموجي المختار للـ Container
-    
+    let onSave: (String, String) -> Void
+
     @State private var thoughtText: String = ""
     @State private var selectedEmoji: String = "😊"
-    
+
     let emojis = ["😓", "😔", "🤩", "😊", "😆", "😎"]
-    
+
     var body: some View {
         VStack(spacing: 0) {
-            // زر إلغاء ومسح اللقطة العلوية للعودة للكاميرا
             HStack {
                 Button(action: onCancel) {
                     Image(systemName: "xmark")
@@ -37,10 +33,9 @@ struct PhotoReview: View {
             }
             .padding(.horizontal, 24)
             .padding(.top, 16)
-            
+
             Spacer()
-            
-            // كارد المراجعة المصمم بتأثير Glassmorphism ناعم فوق الصورة الملتقطة تماماً مثل الفيقما
+
             ZStack(alignment: .bottom) {
                 RoundedRectangle(cornerRadius: 32)
                     .fill(Color.black.opacity(0.04))
@@ -52,16 +47,15 @@ struct PhotoReview: View {
                     }
                     .clipShape(RoundedRectangle(cornerRadius: 32))
                     .shadow(color: .black.opacity(0.05), radius: 15, x: 0, y: 8)
-                
-                // حاوية المدخلات والمشاعر الشفافة (تأثير البلور والزجاج العائم)
+
                 VStack(spacing: 16) {
                     VStack(alignment: .leading, spacing: 10) {
                         TextField("Type a thought ...", text: $thoughtText)
                             .font(.Ubuntu(size: 16))
                             .foregroundColor(.black)
-                        
+
                         Divider()
-                        
+
                         HStack {
                             Spacer()
                             Text("\(thoughtText.isEmpty ? 0 : thoughtText.components(separatedBy: .whitespacesAndNewlines).filter({ !$0.isEmpty }).count) words")
@@ -69,13 +63,12 @@ struct PhotoReview: View {
                                 .foregroundColor(.black.opacity(0.4))
                         }
                     }
-                    
+
                     VStack(alignment: .leading, spacing: 12) {
                         Text("How does this moment feel?")
                             .font(.UbuntuBold(size: 14))
                             .foregroundColor(.black.opacity(0.6))
-                        
-                        // شريط اختيار الإيموجيات الأفقي بالتنقل السلس
+
                         HStack(spacing: 12) {
                             ForEach(emojis, id: \.self) { emoji in
                                 Text(emoji)
@@ -94,15 +87,14 @@ struct PhotoReview: View {
                     }
                 }
                 .padding(20)
-                .background(.ultraThinMaterial) // تأثير زجاجي شفاف يعكس ألوان الصورة الخلفية
+                .background(.ultraThinMaterial)
                 .clipShape(RoundedRectangle(cornerRadius: 28))
                 .padding(12)
             }
             .padding(.horizontal, 24)
-            
+
             Spacer()
-            
-            // زر الاعتماد والرفع النهائي للداتا بيس الحية (علامة الصح الكبيرة)
+
             Button(action: {
                 onSave(thoughtText, selectedEmoji)
             }) {
@@ -125,13 +117,5 @@ struct PhotoReview: View {
         .background(Color("Backgroundcolor").ignoresSafeArea())
     }
 }
-#Preview {
-    // نمرر صورة افتراضية من النظام للتأكد من وزنية الكارت والـ Glassmorphism بالـ Canvas
-    PhotoReview(
-        capturedImage: UIImage(systemName: "photo.fill") ?? UIImage(),
-        onCancel: { print("Cancel tapped") },
-        onSave: { thought, emoji in
-            print("Saved with thought: \(thought) and emoji: \(emoji)")
-        }
-    )
-}
+
+#endif

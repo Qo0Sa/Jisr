@@ -144,13 +144,13 @@ struct MainView: View {
                     
                 case .hostGame:
                     if let room = createdRoom {
-                        RoomContainer(room: room, isHost: true)
+                        CameraView(room: room, isHost: true)
                     }
                 case .guestGame:
                     if let room = createdRoom {
-                        RoomContainer(room: room, isHost: false)
+                        CameraView(room: room, isHost: false)
                     } else if let fallbackRoom = rooms.first {
-                        RoomContainer(room: fallbackRoom, isHost: false)
+                        CameraView(room: fallbackRoom, isHost: false)
                     }
                 }
             }
@@ -257,7 +257,7 @@ struct RoomsListView: View {
                     
                     NavigationLink(destination: {
                         if room.isStarted {
-                            RoomContainer(room: room, isHost: isHost)
+                            CameraView(room: room, isHost: isHost)
                         } else {
                             if isHost {
                                 WaitingRoomView(waitingDestination: .constant(nil), room: room)

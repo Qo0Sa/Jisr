@@ -4,6 +4,10 @@
 //
 //  Created by Wed Ahmed Alasiri on 05/06/2026.
 //
+//  ⚠️ DISABLED — replaced by BlurredCameraView in InsideRoom/sara/CameraBackground.swift
+//
+
+#if false
 
 import SwiftUI
 import AVFoundation
@@ -33,3 +37,4 @@ struct CameraPreview: UIViewRepresentable {
     }
 }
 
+#endif
