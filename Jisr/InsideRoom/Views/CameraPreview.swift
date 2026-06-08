@@ -32,3 +32,4 @@ struct CameraPreview: UIViewRepresentable {
         }
     }
 }
+

@@ -106,6 +106,7 @@ struct RoomContainer: View {
             }
         }
         .navigationBarBackButtonHidden(true)
+        .toolbarBackground(.hidden, for: .navigationBar)
     }
 }
 
