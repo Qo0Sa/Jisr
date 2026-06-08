@@ -58,22 +58,61 @@ struct JoinWithCodeSheet: View {
                     isPresented = false
 //                    onJoined()
                     //wed
-                    let descriptor = FetchDescriptor<Room>()
+//                    let descriptor = FetchDescriptor<Room>()
 
                     
-                       if let room = try? context.fetch(descriptor)
-                           .first(where: { $0.code == roomCode }) {
-                           let userDescriptor = FetchDescriptor<User>()
-                           if let currentUser = try? context.fetch(userDescriptor).first {
-                               let participant = RoomParticipant(user: currentUser, room: room)
-                               context.insert(participant)
-                               try? context.save()
-                           }
-                           
-                           
-                           onJoined(room)
-                           isPresented = false
-                       }
+//                       if let room = try? context.fetch(descriptor)
+//                           .first(where: { $0.code == roomCode }) {
+//                           let userDescriptor = FetchDescriptor<User>()
+//                           if let currentUser = try? context.fetch(userDescriptor).first {
+//                               let participant = RoomParticipant(user: currentUser, room: room)
+//                               context.insert(participant)
+//                               try? context.save()
+//                           }
+//                           
+//                           
+//                           onJoined(room)
+//                           isPresented = false
+//                       }
+                    let descriptor = FetchDescriptor<Room>(
+                        predicate: #Predicate { $0.code == roomCode }
+                    )
+
+                    guard let room = try? context.fetch(descriptor).first else {
+                        errorMessage = "❌ الكود غير صحيح"
+                        return
+                    }
+
+                    guard let currentUser = try? context.fetch(FetchDescriptor<User>()).first else {
+                        errorMessage = "لا يوجد مستخدم مسجل"
+                        return
+                    }
+
+                    // منع التكرار
+                    let alreadyJoined = room.participants?.contains {
+                        $0.user?.persistentModelID == currentUser.persistentModelID
+                    } ?? false
+
+                    if alreadyJoined {
+                        errorMessage = "أنت داخل مسبقًا"
+                        return
+                    }
+
+                    let participant = RoomParticipant(user: currentUser, room: room)
+
+                    // مهم جدًا 👇
+                    if room.participants == nil {
+                        room.participants = []
+                    }
+
+                    room.participants?.append(participant)
+                    context.insert(participant)
+
+                    try? context.save()
+
+                    onJoined(room)
+                    isPresented = false
+
                 }) {
                     Text("Join")
                         .font(.UbuntuBold(size: 20))
