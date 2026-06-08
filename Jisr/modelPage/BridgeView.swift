@@ -212,7 +212,7 @@ struct BuildingSceneView: UIViewRepresentable {
         let scene = SCNScene()
         scnView.scene = scene
 
-        guard let modelScene = SCNScene(named: "Jisr3D.usdz") else {
+        guard let modelScene = SCNScene(named: "Jisr3Dv2.usdz") else {
             print("Failed to load Jisr3D.usdz | فشل تحميل النموذج")
             return scnView
         }
