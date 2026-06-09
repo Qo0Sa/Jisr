@@ -142,7 +142,7 @@ struct WaitingRoomView: View {
                     // زر النسخ (نهاية العناصر الثابتة)
                     HStack {
                         Label(
-                            "\(room.participants?.count ?? 0)",
+                            "\(room.participants.count ?? 0)",
                             systemImage: "person.fill"
                         )
 //                        Spacer()
@@ -207,7 +207,7 @@ struct WaitingRoomView: View {
                 ScrollView(showsIndicators: false) {
                     VStack(spacing: 15) {
                         // قائمة المستخدمين
-                        ForEach(room.participants ?? [], id: \.persistentModelID) { participant in
+                        ForEach(room.participants, id: \.persistentModelID) { participant in
 
                             UserCard(
                                 name: participant.user?.name ?? "Unknown",

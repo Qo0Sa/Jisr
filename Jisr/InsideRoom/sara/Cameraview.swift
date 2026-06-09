@@ -266,11 +266,18 @@ struct CameraView: View {
 
                     // Prompt card with real room mission
                     VStack(alignment: .leading, spacing: 6) {
-                        Text(room.missionTitle.isEmpty ? "Today's Mission" : room.missionTitle)
+//                        Text(room.missionTitle.isEmpty ? "Today's Mission" : room.missionTitle)
+                        Text((room.missionTitle ?? "").isEmpty
+                             ? "Today's Mission"
+                             : room.missionTitle ?? "")
+                        
                             .font(.system(size: 18, weight: .bold))
                             .foregroundColor(Color("buttonColor"))
 
-                        Text(room.missionDescription.isEmpty ? "Start capturing moments." : room.missionDescription)
+//                        Text(room.missionDescription.isEmpty ? "Start capturing moments." : room.missionDescription)
+                        Text((room.missionDescription ?? "").isEmpty
+                             ? "Start capturing moments."
+                             : room.missionDescription ?? "")
                             .font(.system(size: 14))
                             .foregroundColor(Color("buttonColor").opacity(0.6))
                             .lineSpacing(1)

@@ -17,9 +17,12 @@ struct RoomHeader: View {
     @State private var isExpanded = false
     private let warmGray = Color(red: 0.55, green: 0.53, blue: 0.50)
 
+//    var cloudMembers: [User] {
+//        guard let participants = room.participants else { return [] }
+//        return participants.compactMap { $0.user }
+//    }
     var cloudMembers: [User] {
-        guard let participants = room.participants else { return [] }
-        return participants.compactMap { $0.user }
+        room.participants.compactMap { $0.user }
     }
 
     func getPhotosCount(for user: User) -> Int {

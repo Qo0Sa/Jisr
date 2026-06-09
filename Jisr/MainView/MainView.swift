@@ -46,6 +46,43 @@ struct MainView: View {
     @State private var waitingDestination: WaitingDestination? = nil
     @State private var createdRoom: Room? = nil
     
+    // Extracted to reduce type-checking complexity inside .navigationDestination
+    @ViewBuilder
+    private func destinationView(for destination: WaitingDestination) -> some View {
+        switch destination {
+        case .host:
+            if let room = createdRoom {
+                WaitingRoomView(waitingDestination: $waitingDestination, room: room)
+            } else {
+                Text("Preparing room...")
+            }
+        case .guest:
+            if let room = createdRoom {
+                WaitingRoomForNotHostView(roomCode: room.code)
+            } else if let fallbackRoom = rooms.first {
+                WaitingRoomForNotHostView(roomCode: fallbackRoom.code)
+            } else {
+                Text("No active room joined.")
+            }
+        case .profile:
+            ProfileView(waitingDestination: $waitingDestination)
+        case .hostGame:
+            if let room = createdRoom {
+                CameraView(room: room, isHost: true)
+            } else {
+                Text("Preparing host game…")
+            }
+        case .guestGame:
+            if let room = createdRoom {
+                CameraView(room: room, isHost: false)
+            } else if let fallbackRoom = rooms.first {
+                CameraView(room: fallbackRoom, isHost: false)
+            } else {
+                Text("Preparing guest game…")
+            }
+        }
+    }
+    
     private var currentUserImage: Image? {
         if let data = users.first?.profileImage, let uiImage = UIImage(data: data) {
             return Image(uiImage: uiImage)
@@ -124,38 +161,7 @@ struct MainView: View {
                 }
             }
             .navigationDestination(item: $waitingDestination) { destination in
-                switch destination {
-                case .host:
-                    if let room = createdRoom {
-                        WaitingRoomView(waitingDestination: $waitingDestination, room: room)
-                    } else {
-                        Text("Preparing room...")
-                    }
-                    
-                case .guest:
-                    // 💡 تصليح الإيرور: استدعاء كود ود الأصلي بالملي بدون تمرير waitingDestination لمنع تعارض المعاملات وطرد الخطأ
-                    if let room = createdRoom {
-                        WaitingRoomForNotHostView(room: room)
-                    } else if let fallbackRoom = rooms.first {
-                        WaitingRoomForNotHostView(room: fallbackRoom)
-                    } else {
-                        Text("No active room joined.")
-                    }
-                    
-                case .profile:
-                    ProfileView(waitingDestination: $waitingDestination)
-                    
-                case .hostGame:
-                    if let room = createdRoom {
-                        CameraView(room: room, isHost: true)
-                    }
-                case .guestGame:
-                    if let room = createdRoom {
-                        CameraView(room: room, isHost: false)
-                    } else if let fallbackRoom = rooms.first {
-                        CameraView(room: fallbackRoom, isHost: false)
-                    }
-                }
+                destinationView(for: destination)
             }
             .navigationDestination(isPresented: $showModelPage) {
                 ModelPage()
@@ -258,25 +264,36 @@ struct RoomsListView: View {
         ScrollView(showsIndicators: false) {
             VStack(spacing: -40) {  // ← spacing سالب عشان يتغطى
                 
+//                ForEach(Array(rooms.enumerated()), id: \.element.id) { index, room in
+//                    let isHost = room.createdBy?.persistentModelID == users.first?.persistentModelID
+//                    
+//                    NavigationLink(destination: {
+//                        if room.isStarted {
+//                            CameraView(room: room, isHost: isHost)
+//                        } else {
+//                            if isHost {
+//                                WaitingRoomView(waitingDestination: .constant(nil), room: room)
+//                            } else {
+////                                WaitingRoomForNotHostView(room: room)
+//                                WaitingRoomForNotHostView(roomCode: room.code)
+//                            }
+//                        }
+//                    }) {
+//                        RoomCardView(room: room)
+//                    }
+//                    .buttonStyle(PlainButtonStyle())
+//                    .zIndex(Double(index))
+//                }
                 ForEach(Array(rooms.enumerated()), id: \.element.id) { index, room in
-                    let isHost = room.createdBy?.persistentModelID == users.first?.persistentModelID
-                    
-                    NavigationLink(destination: {
-                        if room.isStarted {
-                            CameraView(room: room, isHost: isHost)
-                        } else {
-                            if isHost {
-                                WaitingRoomView(waitingDestination: .constant(nil), room: room)
-                            } else {
-                                WaitingRoomForNotHostView(room: room)
-                            }
-                        }
-                    }) {
+                    NavigationLink {
+                        destinationView(for: room, users: users)
+                    } label: {
                         RoomCardView(room: room)
                     }
-                    .buttonStyle(PlainButtonStyle())
+                    .buttonStyle(.plain)
                     .zIndex(Double(index))
                 }
+                
                 
                 DashedCard {
                     Button {
@@ -296,6 +313,20 @@ struct RoomsListView: View {
         }
     }
     
+    @ViewBuilder
+    private func destinationView(for room: Room, users: [User]) -> some View {
+        let isHost = (room.createdBy?.persistentModelID == users.first?.persistentModelID)
+
+        if room.isStarted {
+            CameraView(room: room, isHost: isHost)
+        } else {
+            if isHost {
+                WaitingRoomView(waitingDestination: .constant(nil), room: room)
+            } else {
+                WaitingRoomForNotHostView(roomCode: room.code)
+            }
+        }
+    }
 }
 // MARK: - كارد الروم
 struct RoomCardView: View {
