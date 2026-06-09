@@ -32,7 +32,10 @@ struct MainView: View {
     @Query(filter: #Predicate<Room> { room in
         room.isClosed == false
     }) private var rooms: [Room]
-    
+
+    // All rooms (open + closed) — used only for layer sync so closed rooms still earn layers
+    @Query private var allRooms: [Room]
+
     @Query private var users: [User]
 
     @State private var viewModel = MainViewModel()
@@ -159,20 +162,23 @@ struct MainView: View {
             }
             .onAppear {
                 viewModel.loadUser(context: context)
-                layerState.syncWithRooms(rooms, maxLayers: 18)
+                layerState.syncWithRooms(allRooms, maxLayers: 18)
             }
             .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("DismissRoomFlow"))) { _ in
                 withAnimation(.easeInOut(duration: 0.25)) {
                     self.waitingDestination = nil
                 }
+                // Sync immediately when returning from a room flow — the room
+                // is already closed by this point, so we need allRooms here.
+                layerState.syncWithRooms(allRooms, maxLayers: 18)
             }
-            .onChange(of: rooms) { _, newRooms in
-                layerState.syncWithRooms(newRooms, maxLayers: 18)
+            .onChange(of: allRooms) { _, latest in
+                layerState.syncWithRooms(latest, maxLayers: 18)
             }
             .onChange(of: scenePhase) { _, newPhase in
                 if newPhase == .active {
                     layerState.checkWeeklyExpiry(maxLayers: 18)
-                    layerState.syncWithRooms(rooms, maxLayers: 18)
+                    layerState.syncWithRooms(allRooms, maxLayers: 18)
                 }
             }
             .navigationBarBackButtonHidden(true)

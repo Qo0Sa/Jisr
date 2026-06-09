@@ -62,17 +62,39 @@ struct ProfilePhotosTabView: View {
             } else {
                 ScrollView(.vertical, showsIndicators: false) {
                     LazyVGrid(columns: columns, spacing: 12) {
-                        ForEach(filteredPhotos, id: \.self) { photo in
-                            ZStack {
-                                RoundedRectangle(cornerRadius: 16)
-                                    .fill(Color.black.opacity(0.04))
-                                    .aspectRatio(1.0, contentMode: .fit)
-                                    .overlay {
-                                        Image(systemName: "photo.fill")
-                                            .font(.system(size: 24))
-                                            .foregroundColor(.black.opacity(0.08))
-                                    }
+                        ForEach(filteredPhotos, id: \.persistentModelID) { photo in
+                            ZStack(alignment: .bottomLeading) {
+                                // Photo image
+                                if let data = photo.imageData, let uiImage = UIImage(data: data) {
+                                    Image(uiImage: uiImage)
+                                        .resizable()
+                                        .scaledToFill()
+                                        .frame(minWidth: 0, maxWidth: .infinity)
+                                        .aspectRatio(1.0, contentMode: .fit)
+                                        .clipped()
+                                } else {
+                                    Rectangle()
+                                        .fill(Color.black.opacity(0.06))
+                                        .aspectRatio(1.0, contentMode: .fit)
+                                        .overlay {
+                                            Image(systemName: "photo.fill")
+                                                .font(.system(size: 22))
+                                                .foregroundColor(.black.opacity(0.15))
+                                        }
+                                }
+
+                                // Emoji badge in bottom-left corner
+                                if !photo.emoji.isEmpty {
+                                    Text(photo.emoji)
+                                        .font(.system(size: 15))
+                                        .padding(.horizontal, 6)
+                                        .padding(.vertical, 4)
+                                        .background(.ultraThinMaterial,
+                                                    in: RoundedRectangle(cornerRadius: 8))
+                                        .padding(7)
+                                }
                             }
+                            .clipShape(RoundedRectangle(cornerRadius: 16))
                         }
                     }
                     .padding(.top, 10)

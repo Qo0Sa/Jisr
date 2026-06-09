@@ -211,8 +211,29 @@ struct CameraView: View {
         }
         .navigationBarBackButtonHidden(true)
         .toolbarBackground(.hidden, for: .navigationBar)
-        .onAppear { camera.start() }
+        // Only start the session when we're actually on the live viewfinder.
+        .onAppear {
+            if !isShowingFeed && camera.capturedPhoto == nil {
+                camera.start()
+            }
+        }
         .onDisappear { camera.stop() }
+        // Switching TO the feed → stop session; returning from feed → restart it.
+        .onChange(of: isShowingFeed) { _, showingFeed in
+            if showingFeed {
+                camera.stop()
+            } else if camera.capturedPhoto == nil {
+                camera.start()
+            }
+        }
+        // Photo captured → stop session; photo dismissed/saved → restart it.
+        .onChange(of: camera.capturedPhoto) { _, photo in
+            if photo != nil {
+                camera.stop()
+            } else if !isShowingFeed {
+                camera.start()
+            }
+        }
     }
 
     @ViewBuilder
