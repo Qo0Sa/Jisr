@@ -2,6 +2,8 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Jisr saves your room photos to your Camera Roll so you can keep them.</string>
 	<key>NSSupportsSuddenTermination</key>
 	<false/>
 	<key>UIAppFonts</key>

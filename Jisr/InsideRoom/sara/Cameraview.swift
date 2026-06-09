@@ -142,6 +142,8 @@ extension CameraSession: AVCapturePhotoCaptureDelegate {
         DispatchQueue.global(qos: .userInitiated).async {
             guard let data = photo.fileDataRepresentation(),
                   let image = UIImage(data: data) else { return }
+            // Store the full-frame image — PhotoBackground uses cropToViewfinder
+            // for the live preview, and onSave uses it again for the stored copy.
             DispatchQueue.main.async { self.capturedPhoto = image }
         }
     }
@@ -157,6 +159,7 @@ struct CameraView: View {
     @State private var isFlashOn = false
     @State private var zoomScale = ".5x"
     @State private var isShowingFeed = false
+    @State private var isShowingMaxPhotosPopup = false
 
     @Environment(\.modelContext) private var context
     @Query private var users: [User]
@@ -175,7 +178,10 @@ struct CameraView: View {
                         }
                     },
                     onSave: { thought, emoji in
-                        guard let imageData = capturedPhoto.jpegData(compressionQuality: 0.8) else { return }
+                        // Crop to exactly what the viewfinder showed before saving
+                        let screenSize = UIScreen.main.bounds.size
+                        let finalImage = cropToViewfinder(image: capturedPhoto, screenSize: screenSize)
+                        guard let imageData = finalImage.jpegData(compressionQuality: 0.8) else { return }
                         guard let currentUser = users.first else {
                             print("No user found")
                             return
@@ -309,6 +315,13 @@ struct CameraView: View {
                         }
 
                         Button(action: {
+                            let currentCount = room.photos?.count ?? 0
+                            guard currentCount < room.maxPhotos else {
+                                withAnimation(.easeInOut(duration: 0.2)) {
+                                    isShowingMaxPhotosPopup = true
+                                }
+                                return
+                            }
                             camera.capturePhoto()
                             if isFlashOn {
                                 isFlashOn = false
@@ -326,6 +339,15 @@ struct CameraView: View {
                         }
                         .padding(.bottom, 84)
                     }
+                }
+
+                // Max photos popup
+                if isShowingMaxPhotosPopup {
+                    MaxPhotosPopup(
+                        isPresented: $isShowingMaxPhotosPopup,
+                        maxPhotos: room.maxPhotos
+                    )
+                    .transition(.opacity)
                 }
             }
         }

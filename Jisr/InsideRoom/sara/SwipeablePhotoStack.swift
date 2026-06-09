@@ -10,50 +10,51 @@ import SwiftData
 
 struct SwipeablePhotoStack: View {
     let photos: [Photo]
-    @State private var currentIndex = 0
-    @State private var dragOffset: CGFloat = 0
 
-    private let swipeThreshold: CGFloat = 70
+    @State private var currentIndex = 0
+    @GestureState private var dragOffset: CGFloat = 0
+
+    private let trailingCards = 3
 
     var body: some View {
         VStack(spacing: 16) {
-            ZStack {
-                // Background cards — stacked behind, slightly smaller and offset up
-                ForEach((1...min(2, max(1, photos.count - currentIndex - 1))).reversed(), id: \.self) { stackPos in
-                    if currentIndex + stackPos < photos.count {
-                        PhotoSummaryCard(photo: photos[currentIndex + stackPos])
-                            .scaleEffect(1.0 - CGFloat(stackPos) * 0.05)
-                            .offset(y: -CGFloat(stackPos) * 18)
-                            .zIndex(Double(5 - stackPos))
+            GeometryReader { geo in
+                let size = geo.size
+
+                ZStack {
+                    ForEach(Array(photos.enumerated()), id: \.element.id) { i, photo in
+                        PhotoSummaryCard(photo: photo)
+                            .shadow(color: .black.opacity(0.15), radius: 8, x: 0, y: 4)
+                            .scaleEffect(scaleFor(i))
+                            .offset(x: xOffsetFor(i), y: yOffsetFor(i))
+                            .rotationEffect(.init(degrees: Double(rotationFor(i))), anchor: .bottom)
+                            // live gesture offset + tilt on the front card only
+                            .offset(x: currentIndex == i ? dragOffset : 0)
+                            .rotationEffect(.init(degrees: Double(rotationForGesture(i))), anchor: .top)
+                            // FIXED: zIndex relative to current front so swiped cards drop behind
+                            .zIndex(zIndexFor(i))
                     }
                 }
-
-                // Front card — draggable
-                PhotoSummaryCard(photo: photos[currentIndex])
-                    .offset(x: dragOffset)
-                    .rotationEffect(.degrees(Double(dragOffset) * 0.02), anchor: .bottom)
-                    .zIndex(10)
-                    .gesture(
-                        DragGesture()
-                            .onChanged { value in
-                                dragOffset = value.translation.width
+                .animation(.easeInOut(duration: 0.25), value: dragOffset == 0)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .gesture(
+                    DragGesture()
+                        .updating($dragOffset) { value, out, _ in
+                            out = (value.translation.width / size.width) * (size.width / 1.2)
+                        }
+                        .onEnded { value in
+                            let t = value.translation.width
+                            if t > 110, currentIndex > 0 {
+                                withAnimation(.easeInOut(duration: 0.25)) { currentIndex -= 1 }
+                            } else if t < -110, currentIndex < photos.count - 1 {
+                                withAnimation(.easeInOut(duration: 0.25)) { currentIndex += 1 }
                             }
-                            .onEnded { value in
-                                withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
-                                    if value.translation.width < -swipeThreshold, currentIndex < photos.count - 1 {
-                                        currentIndex += 1
-                                    } else if value.translation.width > swipeThreshold, currentIndex > 0 {
-                                        currentIndex -= 1
-                                    }
-                                    dragOffset = 0
-                                }
-                            }
-                    )
+                        }
+                )
             }
-            .frame(height: 380)
-            .padding(.top, 44)        // room for background cards peeking above
-            .padding(.horizontal, 24)
-            .animation(.spring(response: 0.35, dampingFraction: 0.75), value: currentIndex)
+            .frame(height: 300)
+            .padding(.top, 36)       // room for cards peeking above the front card
+            .padding(.horizontal, 32)
 
             // Page dots
             HStack(spacing: 6) {
@@ -66,81 +67,123 @@ struct SwipeablePhotoStack: View {
             }
         }
     }
+
+    // MARK: - Per-card transforms (relative to currentIndex)
+
+    /// Signed position: 0 = front, +1 = 1 behind, -1 = already swiped
+    private func rel(_ i: Int) -> Int { i - currentIndex }
+
+    /// Current card on top; swiped cards sink to the bottom of the z-stack
+    private func zIndexFor(_ i: Int) -> Double {
+        let idx = rel(i)
+        if idx < 0 { return 0 }                         // already swiped → behind everything
+        return Double(photos.count) - Double(idx)        // front = N, 1-behind = N-1, …
+    }
+
+    /// Cards behind fan upper-right (like a Polaroid deck); swiped cards stay at 0
+    private func xOffsetFor(_ i: Int) -> CGFloat {
+        let idx = rel(i)
+        guard idx > 0 else { return 0 }
+        return CGFloat(min(idx, trailingCards)) * 8
+    }
+
+    private func yOffsetFor(_ i: Int) -> CGFloat {
+        let idx = rel(i)
+        guard idx > 0 else { return 0 }
+        return -CGFloat(min(idx, trailingCards)) * 14   // peek above the front card
+    }
+
+    /// Scale: front = 1.0, each step behind shrinks by 4%
+    private func scaleFor(_ i: Int) -> CGFloat {
+        let idx = rel(i)
+        guard idx > 0 else { return 1.0 }
+        return max(0.88, 1.0 - CGFloat(min(idx, trailingCards)) * 0.04)
+    }
+
+    /// Static tilt: front = 0°, each step behind adds 2° clockwise
+    private func rotationFor(_ i: Int) -> CGFloat {
+        let idx = rel(i)
+        guard idx > 0 else { return 0 }
+        return CGFloat(min(idx, trailingCards)) * 2
+    }
+
+    /// Live tilt as front card is dragged
+    private func rotationForGesture(_ i: Int) -> CGFloat {
+        guard currentIndex == i else { return 0 }
+        return (dragOffset / UIScreen.main.bounds.width) * 30
+    }
 }
 
 struct PhotoSummaryCard: View {
     let photo: Photo
 
     var body: some View {
-        VStack(spacing: 0) {
-            // Photo area with user badge overlaid
-            ZStack(alignment: .bottomLeading) {
-                RoundedRectangle(cornerRadius: 20)
-                    .fill(Color.black.opacity(0.04))
-                    .aspectRatio(1.0, contentMode: .fit)
+        // Just the photo — no white area below
+        ZStack(alignment: .bottomLeading) {
+            RoundedRectangle(cornerRadius: 18)
+                .fill(Color.black.opacity(0.05))
+                .aspectRatio(1.0, contentMode: .fit)
+                .overlay {
+                    if let data = photo.imageData, let uiImage = UIImage(data: data) {
+                        Image(uiImage: uiImage)
+                            .resizable()
+                            .scaledToFill()
+                    } else {
+                        Image(systemName: "photo.fill")
+                            .font(.system(size: 28))
+                            .foregroundColor(.black.opacity(0.1))
+                    }
+                }
+                .clipShape(RoundedRectangle(cornerRadius: 18))
+
+            // Single badge: avatar + name + thought + emoji
+            HStack(alignment: .top, spacing: 8) {
+                // Avatar
+                Circle()
+                    .fill(Color.black.opacity(0.15))
+                    .frame(width: 28, height: 28)
                     .overlay {
-                        if let data = photo.imageData, let uiImage = UIImage(data: data) {
+                        if let data = photo.user?.profileImage,
+                           let uiImage = UIImage(data: data) {
                             Image(uiImage: uiImage)
                                 .resizable()
                                 .scaledToFill()
+                                .clipShape(Circle())
                         } else {
-                            Image(systemName: "photo.fill")
-                                .font(.system(size: 32))
-                                .foregroundColor(.black.opacity(0.1))
+                            Text(String((photo.user?.name ?? "?").prefix(1)).uppercased())
+                                .font(.system(size: 11, weight: .bold))
+                                .foregroundColor(.white)
                         }
                     }
-                    .clipShape(RoundedRectangle(cornerRadius: 20))
 
-                // User avatar + name
-                HStack(spacing: 4) {
-                    Circle()
-                        .fill(Color.black.opacity(0.15))
-                        .frame(width: 36, height: 36)
-                        .overlay {
-                            if let data = photo.user?.profileImage,
-                               let uiImage = UIImage(data: data) {
-                                Image(uiImage: uiImage)
-                                    .resizable()
-                                    .scaledToFill()
-                                    .clipShape(Circle())
-                            } else {
-                                Text(String((photo.user?.name ?? "M").prefix(1)).uppercased())
-                                    .font(.system(size: 14, weight: .bold))
-                                    .foregroundColor(.white)
-                            }
-                        }
+                // Name on top, thought + emoji below
+                VStack(alignment: .leading, spacing: 2) {
                     Text(photo.user?.name ?? "Member")
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundColor(.black.opacity(0.8))
-                }
-                .padding(.horizontal, 8)
-                .padding(.vertical, 6)
-                .background(.ultraThinMaterial)
-                .clipShape(Capsule())
-                .padding(6)
-            }
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundColor(.black.opacity(0.85))
+                        .lineLimit(1)
 
-            // Thought + emoji row
-            HStack(alignment: .top, spacing: 8) {
-                if !photo.thought.isEmpty {
-                    Text(photo.thought)
-                        .font(.system(size: 16))
-                        .foregroundColor(.black.opacity(0.6))
-                        .lineLimit(2)
-                        .multilineTextAlignment(.leading)
-                        .frame(maxWidth: .infinity, alignment: .leading)
+                    HStack(alignment: .top, spacing: 3) {
+                        if !photo.thought.isEmpty {
+                            Text(photo.thought)
+                                .font(.system(size: 11))
+                                .foregroundColor(.black.opacity(0.6))
+                                .lineLimit(2)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                        Text(photo.emoji)
+                            .font(.system(size: 14))
+                    }
                 }
-                Spacer(minLength: 0)
-                Text(photo.emoji)
-                    .font(.system(size: 22))
             }
-            .padding(.horizontal, 18)
-            .padding(.top, 10)
-            .padding(.bottom, 10)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 8)
+            .background(.ultraThinMaterial)
+            .clipShape(RoundedRectangle(cornerRadius: 14))
+            .padding(8)
         }
-        .background(Color.white)
-        .clipShape(RoundedRectangle(cornerRadius: 24))
-        .shadow(color: .black.opacity(0.08), radius: 6, x:0, y: 0)
+        .clipShape(RoundedRectangle(cornerRadius: 18))
+        .shadow(color: .black.opacity(0.12), radius: 8, x: 0, y: 4)
     }
 }
 

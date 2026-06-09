@@ -288,8 +288,9 @@ struct WaitingRoomView: View {
 //        }
         
         .navigationBarHidden(true)
-        
-        
+        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("DismissRoomFlow"))) { _ in
+            goToCamera = false
+        }
         .onAppear {
             generateMission()
         }
