@@ -206,7 +206,8 @@ struct RoomSelectionSheet: View {
     }
     
     private func saveToCloudKit(room: Room) {
-        let container = CKContainer(identifier: "iCloud.com.app.jisr")
+//        let container = CKContainer(identifier: "iCloud.com.app.jisr")
+        let container = CKContainer.default()
         let publicDB = container.publicCloudDatabase
         
         let record = CKRecord(recordType: "CD_Room")

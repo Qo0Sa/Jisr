@@ -73,45 +73,48 @@ struct JoinWithCodeSheet: View {
 //                           
 //                           onJoined(room)
 //                           isPresented = false
-//                       }
-                    let descriptor = FetchDescriptor<Room>(
-                        predicate: #Predicate { $0.code == roomCode }
-                    )
-
-                    guard let room = try? context.fetch(descriptor).first else {
-                        errorMessage = "❌ الكود غير صحيح"
-                        return
+////                       }
+//                    let descriptor = FetchDescriptor<Room>(
+//                        predicate: #Predicate { $0.code == roomCode }
+//                    )
+//
+//                    guard let room = try? context.fetch(descriptor).first else {
+//                        errorMessage = "❌ الكود غير صحيح"
+//                        return
+//                    }
+//
+//                    guard let currentUser = try? context.fetch(FetchDescriptor<User>()).first else {
+//                        errorMessage = "لا يوجد مستخدم مسجل"
+//                        return
+//                    }
+//
+//                    // منع التكرار
+//                    let alreadyJoined = room.participants?.contains {
+//                        $0.user?.persistentModelID == currentUser.persistentModelID
+//                    } ?? false
+//
+//                    if alreadyJoined {
+//                        errorMessage = "أنت داخل مسبقًا"
+//                        return
+//                    }
+//
+//                    let participant = RoomParticipant(user: currentUser, room: room)
+//
+//                    // مهم جدًا 👇
+//                    if room.participants == nil {
+//                        room.participants = []
+//                    }
+//
+//                    room.participants?.append(participant)
+//                    context.insert(participant)
+//
+//                    try? context.save()
+//
+//                    onJoined(room)
+//                    isPresented = false
+                    Task {
+                        await joinRoom()
                     }
-
-                    guard let currentUser = try? context.fetch(FetchDescriptor<User>()).first else {
-                        errorMessage = "لا يوجد مستخدم مسجل"
-                        return
-                    }
-
-                    // منع التكرار
-                    let alreadyJoined = room.participants?.contains {
-                        $0.user?.persistentModelID == currentUser.persistentModelID
-                    } ?? false
-
-                    if alreadyJoined {
-                        errorMessage = "أنت داخل مسبقًا"
-                        return
-                    }
-
-                    let participant = RoomParticipant(user: currentUser, room: room)
-
-                    // مهم جدًا 👇
-                    if room.participants == nil {
-                        room.participants = []
-                    }
-
-                    room.participants?.append(participant)
-                    context.insert(participant)
-
-                    try? context.save()
-
-                    onJoined(room)
-                    isPresented = false
 
                 }) {
                     Text("Join")
@@ -119,7 +122,11 @@ struct JoinWithCodeSheet: View {
                         .foregroundColor(.white)
                         .frame(width: 170)
                         .frame(height: 58)
-                        .background(roomCode.isEmpty ? Color("buttonColor").opacity(0.5) : Color("buttonColor"))
+                        .background(
+                            roomCode.isEmpty
+                            ? Color("buttonColor").opacity(0.5)
+                            : Color("buttonColor")
+                        )
                         .clipShape(RoundedRectangle(cornerRadius: 99))
                 }
                 .disabled(roomCode.isEmpty)
@@ -144,7 +151,8 @@ struct JoinWithCodeSheet: View {
         isLoading = true
         errorMessage = ""
         
-        let ckContainer = CKContainer(identifier: "iCloud.com.app.jisr")
+//        let ckContainer = CKContainer(identifier: "iCloud.com.app.jisr")
+        let ckContainer = CKContainer.default()
         let publicDB = ckContainer.publicCloudDatabase
         
         let predicate = NSPredicate(format: "CD_code == %@", roomCode)
