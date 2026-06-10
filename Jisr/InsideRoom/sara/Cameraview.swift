@@ -199,11 +199,24 @@ struct CameraView: View {
                         } catch {
                             print("Save failed: \(error)")
                         }
+                        
+                        Task {
+                            await CloudKitManager.shared.uploadPhoto(
+                                roomCode: room.code,
+                                imageData: imageData,
+                                thought: thought,
+                                emoji: emoji,
+                                userName: currentUser.name,
+                                profileImage: currentUser.profileImage
+                            )
+                        }
+                        
                         withAnimation(.easeInOut(duration: 0.25)) {
                             camera.capturedPhoto = nil
                             isShowingFeed = true
                         }
                     }
+                    
                 )
             } else {
                 cameraBody

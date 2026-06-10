@@ -147,54 +147,98 @@ struct JoinWithCodeSheet: View {
         
     }
     
+    
     func joinRoom() async {
         isLoading = true
         errorMessage = ""
-        
-//        let ckContainer = CKContainer(identifier: "iCloud.com.app.jisr")
-        let ckContainer = CKContainer.default()
-        let publicDB = ckContainer.publicCloudDatabase
-        
-        let predicate = NSPredicate(format: "CD_code == %@", roomCode)
-        let query = CKQuery(recordType: "CD_Room", predicate: predicate)
-        
-        do {
-            let result = try await publicDB.records(matching: query)
-            let records = result.matchResults.compactMap { try? $0.1.get() }
-            
-            guard let record = records.first else {
-                errorMessage = "❌ الكود غلط، تحقق منه"
-                isLoading = false
-                return
-            }
-            
-            // أنشئ الروم محلياً على جهاز شخص ٢
-            let room = Room(
-                name: record["CD_name"] as? String ?? "",
-                code: roomCode,
-                category: record["CD_category"] as? String ?? "",
-                location: record["CD_location"] as? String ?? "",
-                maxPhotos: record["CD_maxPhotos"] as? Int ?? 3
-            )
-            context.insert(room)
-            
-            let userDescriptor = FetchDescriptor<User>()
-            if let currentUser = try? context.fetch(userDescriptor).first {
-                let participant = RoomParticipant(user: currentUser, room: room)
-                context.insert(participant)
-            }
-            
-            try? context.save()
-            onJoined(room)
-            isPresented = false
-            
-        } catch {
-            errorMessage = "تأكد من الإنترنت وحاول مرة ثانية"
-            print("❌ CloudKit error: \(error)")
+
+        // ١. دور على الغرفة في CloudKit
+        guard let roomRecord = await CloudKitManager.shared.fetchRoom(byCode: roomCode) else {
+            errorMessage = "❌ الكود غلط، تحقق منه"
+            isLoading = false
+            return
         }
-        
+
+        // ٢. أنشئ الغرفة محلياً (مؤقتاً لحين نغير باقي الشاشات)
+        let room = Room(
+            name: roomRecord["CD_name"] as? String ?? "",
+            code: roomCode,
+            category: roomRecord["CD_category"] as? String ?? "",
+            location: roomRecord["CD_location"] as? String ?? "",
+            maxPhotos: roomRecord["CD_maxPhotos"] as? Int ?? 3
+        )
+        context.insert(room)
+
+        // ٣. أضف الضيف كـ Participant في CloudKit
+        let userDescriptor = FetchDescriptor<User>()
+        if let currentUser = try? context.fetch(userDescriptor).first {
+            await CloudKitManager.shared.addParticipant(
+                roomCode: roomCode,
+                userName: currentUser.name,
+                profileImage: currentUser.profileImage,
+                isHost: false
+            )
+        }
+
+        // ٤. اشترك في التحديثات
+        CloudKitManager.shared.subscribeToRoom(roomCode: roomCode)
+        CloudKitManager.shared.subscribeToPhotos(roomCode: roomCode)
+
+        try? context.save()
+        onJoined(room)
+        isPresented = false
         isLoading = false
     }
+    
+    
+//    func joinRoom() async {
+//        isLoading = true
+//        errorMessage = ""
+//        
+////        let ckContainer = CKContainer(identifier: "iCloud.com.app.jisr")
+//        let ckContainer = CKContainer.default()
+//        let publicDB = ckContainer.publicCloudDatabase
+//        
+//        let predicate = NSPredicate(format: "CD_code == %@", roomCode)
+//        let query = CKQuery(recordType: "CD_Room", predicate: predicate)
+//        
+//        do {
+//            let result = try await publicDB.records(matching: query)
+//            let records = result.matchResults.compactMap { try? $0.1.get() }
+//            
+//            guard let record = records.first else {
+//                errorMessage = "❌ الكود غلط، تحقق منه"
+//                isLoading = false
+//                return
+//            }
+//            
+//            // أنشئ الروم محلياً على جهاز شخص ٢
+//            let room = Room(
+//                name: record["CD_name"] as? String ?? "",
+//                code: roomCode,
+//                category: record["CD_category"] as? String ?? "",
+//                location: record["CD_location"] as? String ?? "",
+//                maxPhotos: record["CD_maxPhotos"] as? Int ?? 3
+//            )
+//            context.insert(room)
+//            
+//            let userDescriptor = FetchDescriptor<User>()
+//            if let currentUser = try? context.fetch(userDescriptor).first {
+//                let participant = RoomParticipant(user: currentUser, room: room)
+//                context.insert(participant)
+//            }
+//            
+//            try? context.save()
+//            onJoined(room)
+//            isPresented = false
+//            
+//        } catch {
+//            errorMessage = "تأكد من الإنترنت وحاول مرة ثانية"
+//            print("❌ CloudKit error: \(error)")
+//        }
+//        
+//        isLoading = false
+//    }
 
 }
 

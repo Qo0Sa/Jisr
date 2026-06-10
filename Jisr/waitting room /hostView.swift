@@ -20,6 +20,7 @@
 import SwiftUI
 import CoreML
 import SwiftData
+import CloudKit
 
 struct WaitingRoomView: View {
     
@@ -54,6 +55,11 @@ struct WaitingRoomView: View {
     
     @State private var goToCamera = false
  //   @State private var goToMain = false
+    
+    @State private var ckParticipants: [CKRecord] = []
+    @State private var roomRecordID: CKRecord.ID? = nil
+    @State private var refreshTimer: Timer? = nil
+    
     
     @Environment(\.modelContext) private var context
     var body: some View {
@@ -141,10 +147,8 @@ struct WaitingRoomView: View {
                     
                     // زر النسخ (نهاية العناصر الثابتة)
                     HStack {
-                        Label(
-                            "\(room.participants.count ?? 0)",
-                            systemImage: "person.fill"
-                        )
+                        Label("\(ckParticipants.count)", systemImage: "person.fill")
+                        
 //                        Spacer()
 //                            .offset(x:-10)
                         
@@ -206,12 +210,19 @@ struct WaitingRoomView: View {
                 // MARK: ScrollView (تبدأ من هنا وتأخذ باقي الشاشة)
                 ScrollView(showsIndicators: false) {
                     VStack(spacing: 15) {
-                        // قائمة المستخدمين
-                        ForEach(room.participants, id: \.persistentModelID) { participant in
-
+//                        // قائمة المستخدمين
+//                        ForEach(room.participants, id: \.persistentModelID) { participant in
+//
+//                            UserCard(
+//                                name: participant.user?.name ?? "Unknown",
+//                                imageData: participant.user?.profileImage
+//                            )
+//                        }
+                        // وحطي هذا ↓
+                        ForEach(ckParticipants, id: \.recordID) { participant in
                             UserCard(
-                                name: participant.user?.name ?? "Unknown",
-                                imageData: participant.user?.profileImage
+                                name: participant["CD_userName"] as? String ?? "Unknown",
+                                imageData: participant["CD_userProfileImage"] as? Data
                             )
                         }
                         
@@ -293,7 +304,24 @@ struct WaitingRoomView: View {
         }
         .onAppear {
             generateMission()
+            loadParticipants()
+            Task {
+                if let record = await CloudKitManager.shared.fetchRoom(byCode: room.code) {
+                    roomRecordID = record.recordID
+                }
+            }
+            refreshTimer = Timer.scheduledTimer(withTimeInterval: 3.0, repeats: true) { _ in
+                loadParticipants()
+            }
         }
+        .onDisappear {
+            refreshTimer?.invalidate()
+        }
+        
+        .onReceive(NotificationCenter.default.publisher(for: .cloudKitDataChanged)) { _ in
+            loadParticipants()
+        }
+        
     }
     
     
@@ -351,12 +379,18 @@ struct WaitingRoomView: View {
     }
     
     func sendStartNotification() {
-
-        // TODO:
-        // هنا لاحقًا بنرسل إشعار لكل المشاركين في الروم
-        // باستخدام CloudKit أو Firebase
-
+        Task {
+            guard let recordID = roomRecordID else { return }
+            await CloudKitManager.shared.updateRoom(recordID: recordID, isStarted: 1)
+        }
     }
+    
+    func loadParticipants() {
+        Task {
+            ckParticipants = await CloudKitManager.shared.fetchParticipants(roomCode: room.code)
+        }
+    }
+    
     
     
     func handleStartNotification() {

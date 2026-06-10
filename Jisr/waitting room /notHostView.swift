@@ -203,6 +203,8 @@
 
 import SwiftUI
 import SwiftData
+import CloudKit
+
 
 struct WaitingRoomForNotHostView: View {
 
@@ -210,7 +212,12 @@ struct WaitingRoomForNotHostView: View {
 
     @State private var goToCamera = false
     @State private var goToMain = false
-
+    
+    @State private var ckParticipants: [CKRecord] = []
+    @State private var ckRoom: CKRecord? = nil
+    @State private var refreshTimer: Timer? = nil
+    
+    
     @Query private var rooms: [Room]
 
     var room: Room? {
@@ -291,7 +298,7 @@ struct WaitingRoomForNotHostView: View {
 
                             // PARTICIPANTS COUNT
                             HStack {
-                                Label("\(room.participants.count)", systemImage: "person.fill")
+                                Label("\(ckParticipants.count)", systemImage: "person.fill")
                             }
                             .offset(y: -100)
 
@@ -302,13 +309,12 @@ struct WaitingRoomForNotHostView: View {
                         ScrollView(showsIndicators: false) {
                             VStack(spacing: 15) {
 
-                                ForEach(room.participants, id: \.persistentModelID) { participant in
+                                ForEach(ckParticipants, id: \.recordID) { participant in
                                     UserCard(
-                                        name: participant.user?.name ?? "Unknown",
-                                        imageData: participant.user?.profileImage
+                                        name: participant["CD_userName"] as? String ?? "Unknown",
+                                        imageData: participant["CD_userProfileImage"] as? Data
                                     )
                                 }
-
                                 Color.clear.frame(height: 30)
                             }
                             .padding(.horizontal)
@@ -332,13 +338,32 @@ struct WaitingRoomForNotHostView: View {
             MainView()
         }
         .navigationBarHidden(true)
-        .onChange(of: room?.isStarted) { _, started in
-            if started == true {
-                goToCamera = true
+        .onAppear {
+            loadData()
+            refreshTimer = Timer.scheduledTimer(withTimeInterval: 3.0, repeats: true) { _ in
+                loadData()
             }
+        }
+        .onDisappear {
+            refreshTimer?.invalidate()
+        }
+        
+        
+        .onReceive(NotificationCenter.default.publisher(for: .cloudKitDataChanged)) { _ in
+            loadData()
         }
     }
 
+    func loadData() {
+        Task {
+            ckParticipants = await CloudKitManager.shared.fetchParticipants(roomCode: roomCode)
+            ckRoom = await CloudKitManager.shared.fetchRoom(byCode: roomCode)
+            if let ckRoom, ckRoom["CD_isStarted"] as? Int64 == 1 {
+                await MainActor.run { goToCamera = true }
+            }
+        }
+    }
+    
     // MARK: - User Card (بدون تغيير)
     struct UserCard: View {
 

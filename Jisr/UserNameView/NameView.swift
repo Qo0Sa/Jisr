@@ -85,6 +85,7 @@ struct NameView: View {
                     } else {
                         showError = false
                         viewModel.saveUser(context: context)
+                        viewModel.fetchAndSaveiCloudID()
                         
                         // 💡 تفعيل الدخول الثابت وحفظ البيانات وتأكيده فورياً
                         hasRegistered = true

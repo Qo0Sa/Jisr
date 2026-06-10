@@ -198,35 +198,58 @@ struct RoomSelectionSheet: View {
         
         try? context.save()
         
-        // ✅ ارفع الروم في CloudKit Public عشان شخص ٢ يشوفها
-        saveToCloudKit(room: newRoom)
+//        // ✅ ارفع الروم في CloudKit Public عشان شخص ٢ يشوفها
+//        saveToCloudKit(room: newRoom)
+        
+        Task {
+            await CloudKitManager.shared.createRoom(
+                name: newRoom.name,
+                code: newRoom.code,
+                category: newRoom.category,
+                location: newRoom.location,
+                maxPhotos: newRoom.maxPhotos,
+                missionTitle: newRoom.missionTitle ?? "",
+                missionDescription: newRoom.missionDescription ?? ""
+            )
+            let descriptor = FetchDescriptor<User>()
+            if let currentUser = try? context.fetch(descriptor).first {
+                await CloudKitManager.shared.addParticipant(
+                    roomCode: newRoom.code,
+                    userName: currentUser.name,
+                    profileImage: currentUser.profileImage,
+                    isHost: true
+                )
+            }
+            CloudKitManager.shared.subscribeToParticipants(roomCode: newRoom.code)
+        }
+        
         
         isPresented = false
         onRoomCreated(newRoom)
     }
     
-    private func saveToCloudKit(room: Room) {
-//        let container = CKContainer(identifier: "iCloud.com.app.jisr")
-        let container = CKContainer.default()
-        let publicDB = container.publicCloudDatabase
-        
-        let record = CKRecord(recordType: "CD_Room")
-        record["CD_name"] = room.name
-        record["CD_code"] = room.code
-        record["CD_category"] = room.category
-        record["CD_location"] = room.location
-        record["CD_maxPhotos"] = room.maxPhotos
-        record["CD_isStarted"] = 0
-        record["CD_isClosed"] = 0
-        
-        publicDB.save(record) { _, error in
-            if let error = error {
-                print("❌ CloudKit error: \(error)")
-            } else {
-                print("✅ الروم اتحفظت: \(room.code)")
-            }
-        }
-    }
+//    private func saveToCloudKit(room: Room) {
+////        let container = CKContainer(identifier: "iCloud.com.app.jisr")
+//        let container = CKContainer.default()
+//        let publicDB = container.publicCloudDatabase
+//        
+//        let record = CKRecord(recordType: "CD_Room")
+//        record["CD_name"] = room.name
+//        record["CD_code"] = room.code
+//        record["CD_category"] = room.category
+//        record["CD_location"] = room.location
+//        record["CD_maxPhotos"] = room.maxPhotos
+//        record["CD_isStarted"] = 0
+//        record["CD_isClosed"] = 0
+//        
+//        publicDB.save(record) { _, error in
+//            if let error = error {
+//                print("❌ CloudKit error: \(error)")
+//            } else {
+//                print("✅ الروم اتحفظت: \(room.code)")
+//            }
+//        }
+//    }
 }
 
 // MARK: - الـ Component المصغر المطور لعرض عنقود الأيقونات الموزعة

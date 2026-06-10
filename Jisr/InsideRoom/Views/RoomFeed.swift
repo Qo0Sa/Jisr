@@ -7,6 +7,7 @@
 
 import SwiftUI
 import SwiftData
+import CloudKit
 
 struct RoomFeed: View {
     @Environment(\.modelContext) private var context
@@ -18,15 +19,26 @@ struct RoomFeed: View {
     @State private var isShowingEndPopup = false
     @State private var isRoomFinished = false
     
-    var roomPhotos: [Photo] {
-        let allPhotos = room.photos ?? []
-        return allPhotos.sorted(by: { $0.uploadedAt > $1.uploadedAt })
-    }
+    @State private var ckPhotos: [CKRecord] = []
+    @State private var roomRecordID: CKRecord.ID? = nil
+    @State private var refreshTimer: Timer? = nil
+    
+    var roomPhotos: [CKRecord] { ckPhotos }
     
     let columns = [
         GridItem(.flexible(), spacing: 14),
         GridItem(.flexible(), spacing: 14)
     ]
+    
+    
+    
+    func loadPhotos() {
+        Task {
+            ckPhotos = await CloudKitManager.shared.fetchPhotos(roomCode: room.code)
+        }
+    }
+    
+    
     var body: some View {
         ZStack {
             VStack(spacing: 0) {
@@ -54,14 +66,14 @@ struct RoomFeed: View {
                         .padding(.horizontal, 40)
                     } else {
                         LazyVGrid(columns: columns, spacing: 16) {
-                            ForEach(roomPhotos) { photo in
-                                // 💡 تفعيل عرض كارد البولاريد الحي بسحب اسم المستخدم وصورته والكومنت المكتوب حياً
+                            ForEach(ckPhotos, id: \.recordID) { photo in
+                                let thought = photo["CD_thought"] as? String ?? ""
                                 FeedCard(
-                                    userName: photo.user?.name ?? "Member",
-                                    userImageData: photo.user?.profileImage,
-                                    thoughtText: photo.thought.isEmpty ? "Capturing the moment!" : photo.thought,
-                                    emojiReaction: photo.emoji,
-                                    imageData: photo.imageData
+                                    userName: photo["CD_userName"] as? String ?? "Member",
+                                    userImageData: photo["CD_userProfileImage"] as? Data,
+                                    thoughtText: thought.isEmpty ? "Capturing the moment!" : thought,
+                                    emojiReaction: photo["CD_emoji"] as? String ?? "😊",
+                                    imageData: photo["CD_imageData"] as? Data
                                 )
                             }
                         }
@@ -96,10 +108,13 @@ struct RoomFeed: View {
                 EndRoomPopup(
                     isPresented: $isShowingEndPopup,
                     onConfirmEnd: {
+                        Task {
+                            guard let recordID = roomRecordID else { return }
+                            await CloudKitManager.shared.updateRoom(recordID: recordID, isClosed: 1)
+                        }
                         room.isClosed = true
                         try? context.save()
-                        isRoomFinished = true
-                    }
+                        isRoomFinished = true                    }
                 )
                 .transition(.opacity)
             }
@@ -109,6 +124,26 @@ struct RoomFeed: View {
         .navigationDestination(isPresented: $isRoomFinished) {
             RoomSummary(room: room)
         }
+        
+        .onAppear {
+            loadPhotos()
+            Task {
+                if let record = await CloudKitManager.shared.fetchRoom(byCode: room.code) {
+                    roomRecordID = record.recordID
+                }
+            }
+            refreshTimer = Timer.scheduledTimer(withTimeInterval: 3.0, repeats: true) { _ in
+                loadPhotos()
+            }
+        }
+        .onDisappear {
+            refreshTimer?.invalidate()
+        }
+        
+        .onReceive(NotificationCenter.default.publisher(for: .cloudKitDataChanged)) { _ in
+            loadPhotos()
+        }
+        
     }
 }
 

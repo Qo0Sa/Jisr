@@ -8,7 +8,7 @@
 import SwiftUI
 import PhotosUI
 import SwiftData
-
+import CloudKit
 @Observable
 class UserViewModel {
     var name = ""
@@ -29,6 +29,15 @@ class UserViewModel {
         }
     }
     
+    func fetchAndSaveiCloudID() {
+        CKContainer.default().fetchUserRecordID { recordID, error in
+            guard let id = recordID?.recordName else { return }
+            UserDefaults.standard.set(id, forKey: "iCloudUserID")
+            print("✅ iCloud ID saved: \(id)")
+        }
+    }
+    
+    
 //    func saveUser(context: ModelContext) {
 //        let user = User(name: name, profileImage: profileImageData)
 //        context.insert(user)
@@ -43,4 +52,9 @@ class UserViewModel {
                     print("❌ Failed to save context: \(error.localizedDescription)")
                 }
     }
+    
+    
+    
+    
+    
 }
