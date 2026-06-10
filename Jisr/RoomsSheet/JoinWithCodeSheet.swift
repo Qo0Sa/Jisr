@@ -55,7 +55,7 @@ struct JoinWithCodeSheet: View {
                     .focused($isTextFieldFocused)
                 
                 Button(action: {
-                    isPresented = false
+                //    isPresented = false
 //                    onJoined()
                     //wed
 //                    let descriptor = FetchDescriptor<Room>()
