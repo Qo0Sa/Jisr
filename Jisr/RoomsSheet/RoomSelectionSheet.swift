@@ -11,7 +11,7 @@
 
 import SwiftUI
 import SwiftData
-import CloudKit
+import FirebaseFirestore
 
 struct RoomSelectionSheet: View {
     @Environment(\.modelContext) private var context
@@ -198,6 +198,29 @@ struct RoomSelectionSheet: View {
         
         try? context.save()
         
+        Task {
+            print("🔥 بدأ حفظ الروم: \(newRoom.code)")
+            let result = await CloudKitManager.shared.createRoom(
+                name: newRoom.name,
+                code: newRoom.code,
+                category: newRoom.category,
+                location: newRoom.location,
+                maxPhotos: newRoom.maxPhotos,
+                missionTitle: newRoom.missionTitle ?? "",
+                missionDescription: newRoom.missionDescription ?? ""
+            )
+            print("🔥 نتيجة createRoom: \(String(describing: result))")
+
+            let descriptor = FetchDescriptor<User>()
+            if let currentUser = try? context.fetch(descriptor).first {
+                await CloudKitManager.shared.addParticipant(
+                    roomCode: newRoom.code,
+                    userName: currentUser.name,
+                    profileImage: currentUser.profileImage,
+                    isHost: true
+                )
+            }
+        }
 //        // ✅ ارفع الروم في CloudKit Public عشان شخص ٢ يشوفها
 //        saveToCloudKit(room: newRoom)
         
@@ -227,6 +250,7 @@ struct RoomSelectionSheet: View {
         isPresented = false
         onRoomCreated(newRoom)
     }
+    
     
 //    private func saveToCloudKit(room: Room) {
 ////        let container = CKContainer(identifier: "iCloud.com.app.jisr")
