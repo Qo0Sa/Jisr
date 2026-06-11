@@ -45,6 +45,7 @@ struct MainView: View {
 
     @State private var waitingDestination: WaitingDestination? = nil
     @State private var createdRoom: Room? = nil
+    @State private var joinedRoom: Room? = nil
     
     // Extracted to reduce type-checking complexity inside .navigationDestination
     @ViewBuilder
@@ -57,7 +58,7 @@ struct MainView: View {
                 Text("Preparing room...")
             }
         case .guest:
-            if let room = createdRoom {
+            if let room = joinedRoom {
                 WaitingRoomForNotHostView(roomCode: room.code)
             } else if let fallbackRoom = rooms.first {
                 WaitingRoomForNotHostView(roomCode: fallbackRoom.code)
@@ -153,8 +154,12 @@ struct MainView: View {
                     JoinWithCodeSheet(
                         isPresented: $isShowingJoinPopup,
                         onJoined: { room in
-                            createdRoom = room
-                            waitingDestination = .guest
+//                            createdRoom = room
+//                            waitingDestination = .guest
+                          
+                                joinedRoom = room
+                                waitingDestination = .guest
+                            
                         }
                     )
                     .transition(.opacity)

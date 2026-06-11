@@ -10,7 +10,7 @@ import FirebaseFirestore
 struct WaitingRoomForNotHostView: View {
 
     let roomCode: String
-
+    @Environment(\.dismiss) private var dismiss
     @State private var goToCamera = false
     @State private var goToMain = false
     @State private var participants: [[String: Any]] = []
@@ -57,7 +57,9 @@ struct WaitingRoomForNotHostView: View {
 
                     // HEADER
                     HStack {
-                        Button(action: { goToMain = true }) {
+                        Button(action:{
+                            dismiss()
+                        }) {
                             Image(systemName: "chevron.left")
                                 .font(.system(size: 24, weight: .bold))
                                 .foregroundColor(.black)
