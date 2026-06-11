@@ -51,7 +51,6 @@ class CloudKitManager {
     func fetchRoom(byCode code: String) async -> [String: Any]? {
         do {
             let doc = try await db.collection("rooms").document(code).getDocument()
-            print("✅ Room fetched: \(code)")
             return doc.data()
         } catch {
             print("❌ fetchRoom: \(error)")
@@ -150,14 +149,18 @@ class CloudKitManager {
     }
 
     // ─────────────────────────────────────────
-    // MARK: - Realtime Listeners (بديل الـ Subscriptions)
+    // MARK: - Realtime Listeners ✅ مصلحة
     // ─────────────────────────────────────────
 
     func listenToRoom(roomCode: String, onChange: @escaping ([String: Any]) -> Void) -> ListenerRegistration {
         return db.collection("rooms").document(roomCode)
-            .addSnapshotListener { snapshot, _ in
+            .addSnapshotListener { snapshot, error in
+                if let error = error {
+                    print("❌ listenToRoom: \(error)")
+                    return
+                }
                 if let data = snapshot?.data() {
-                    onChange(data)
+                    DispatchQueue.main.async { onChange(data) }
                 }
             }
     }
@@ -165,13 +168,17 @@ class CloudKitManager {
     func listenToParticipants(roomCode: String, onChange: @escaping ([[String: Any]]) -> Void) -> ListenerRegistration {
         return db.collection("participants")
             .whereField("roomCode", isEqualTo: roomCode)
-            .addSnapshotListener { snapshot, _ in
+            .addSnapshotListener { snapshot, error in
+                if let error = error {
+                    print("❌ listenToParticipants: \(error)")
+                    return
+                }
                 let participants = snapshot?.documents.map { $0.data() } ?? []
-                onChange(participants)
+                DispatchQueue.main.async { onChange(participants) }
             }
     }
 
-    // للتوافق مع الكود القديم (ما يحتاج تغيير في hostView)
+    // للتوافق مع الكود القديم
     func subscribeToRoom(roomCode: String) {}
     func subscribeToParticipants(roomCode: String) {}
     func subscribeToPhotos(roomCode: String) {}
