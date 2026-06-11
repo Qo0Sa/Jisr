@@ -2,69 +2,70 @@
 //  CloudKitManager.swift
 //  Jisr
 //
-//  Created by Sarah on 24/12/1447 AH.
-//
 
 import Foundation
-import CloudKit
+import FirebaseAuth
+import FirebaseFirestore
+import FirebaseStorage
 import SwiftUI
 
 class CloudKitManager {
-    
+
     static let shared = CloudKitManager()
-    private let publicDB = CKContainer.default().publicCloudDatabase
-    
+    private let db = Firestore.firestore()
+
     var currentUserID: String {
-        UserDefaults.standard.string(forKey: "iCloudUserID") ?? ""
+        Auth.auth().currentUser?.uid ?? UserDefaults.standard.string(forKey: "iCloudUserID") ?? ""
     }
-    
+
     // ─────────────────────────────────────────
     // MARK: - Room
     // ─────────────────────────────────────────
-    
+
     func createRoom(name: String, code: String, category: String,
                     location: String, maxPhotos: Int,
-                    missionTitle: String, missionDescription: String) async -> CKRecord? {
-        let record = CKRecord(recordType: "CD_Room")
-        record["CD_name"]               = name
-        record["CD_code"]               = code
-        record["CD_category"]           = category
-        record["CD_location"]           = location
-        record["CD_maxPhotos"]          = maxPhotos
-        record["CD_isStarted"]          = 0
-        record["CD_isClosed"]           = 0
-        record["CD_missionTitle"]       = missionTitle
-        record["CD_missionDescription"] = missionDescription
-        record["CD_hostUserID"]         = currentUserID
-
+                    missionTitle: String, missionDescription: String) async -> [String: Any]? {
+        let data: [String: Any] = [
+            "name": name,
+            "code": code,
+            "category": category,
+            "location": location,
+            "maxPhotos": maxPhotos,
+            "isStarted": false,
+            "isClosed": false,
+            "missionTitle": missionTitle,
+            "missionDescription": missionDescription,
+            "hostUserID": currentUserID,
+            "createdAt": Timestamp()
+        ]
         do {
-            let saved = try await publicDB.save(record)
+            try await db.collection("rooms").document(code).setData(data)
             print("✅ Room created: \(code)")
-            return saved
+            return data
         } catch {
             print("❌ createRoom: \(error)")
             return nil
         }
     }
 
-    func fetchRoom(byCode code: String) async -> CKRecord? {
-        let predicate = NSPredicate(format: "CD_code == %@", code)
-        let query = CKQuery(recordType: "CD_Room", predicate: predicate)
+    func fetchRoom(byCode code: String) async -> [String: Any]? {
         do {
-            let result = try await publicDB.records(matching: query)
-            return result.matchResults.compactMap { try? $0.1.get() }.first
+            let doc = try await db.collection("rooms").document(code).getDocument()
+            print("✅ Room fetched: \(code)")
+            return doc.data()
         } catch {
             print("❌ fetchRoom: \(error)")
             return nil
         }
     }
 
-    func updateRoom(recordID: CKRecord.ID, isStarted: Int? = nil, isClosed: Int? = nil) async {
+    func updateRoom(roomCode: String, isStarted: Bool? = nil, isClosed: Bool? = nil) async {
+        var updates: [String: Any] = [:]
+        if let isStarted { updates["isStarted"] = isStarted }
+        if let isClosed  { updates["isClosed"]  = isClosed  }
+        guard !updates.isEmpty else { return }
         do {
-            let record = try await publicDB.record(for: recordID)
-            if let isStarted { record["CD_isStarted"] = isStarted }
-            if let isClosed  { record["CD_isClosed"]  = isClosed  }
-            try await publicDB.save(record)
+            try await db.collection("rooms").document(roomCode).updateData(updates)
             print("✅ Room updated")
         } catch {
             print("❌ updateRoom: \(error)")
@@ -76,33 +77,33 @@ class CloudKitManager {
     // ─────────────────────────────────────────
 
     func addParticipant(roomCode: String, userName: String,
-                        profileImage: Data?, isHost: Bool) async -> CKRecord? {
-        let record = CKRecord(recordType: "CD_RoomParticipant")
-        record["CD_room"]     = roomCode
-        record["CD_user"]     = currentUserID
-        record["CD_userName"] = userName
-        record["CD_isHost"]   = isHost ? 1 : 0
-        record["CD_isReady"]  = 0
-        record["CD_joinedAt"] = Date()
+                        profileImage: Data?, isHost: Bool) async {
+        var data: [String: Any] = [
+            "roomCode": roomCode,
+            "userID": currentUserID,
+            "userName": userName,
+            "isHost": isHost,
+            "isReady": false,
+            "joinedAt": Timestamp()
+        ]
         if let imageData = profileImage {
-            record["CD_userProfileImage"] = imageData as NSData
+            data["profileImageBase64"] = imageData.base64EncodedString()
         }
         do {
-            let saved = try await publicDB.save(record)
+            let docID = "\(roomCode)_\(currentUserID)"
+            try await db.collection("participants").document(docID).setData(data)
             print("✅ Participant added: \(userName)")
-            return saved
         } catch {
             print("❌ addParticipant: \(error)")
-            return nil
         }
     }
 
-    func fetchParticipants(roomCode: String) async -> [CKRecord] {
-        let predicate = NSPredicate(format: "CD_room == %@", roomCode)
-        let query = CKQuery(recordType: "CD_RoomParticipant", predicate: predicate)
+    func fetchParticipants(roomCode: String) async -> [[String: Any]] {
         do {
-            let result = try await publicDB.records(matching: query)
-            return result.matchResults.compactMap { try? $0.1.get() }
+            let snapshot = try await db.collection("participants")
+                .whereField("roomCode", isEqualTo: roomCode)
+                .getDocuments()
+            return snapshot.documents.map { $0.data() }
         } catch {
             print("❌ fetchParticipants: \(error)")
             return []
@@ -114,38 +115,34 @@ class CloudKitManager {
     // ─────────────────────────────────────────
 
     func uploadPhoto(roomCode: String, imageData: Data, thought: String,
-                     emoji: String, userName: String, profileImage: Data?) async -> CKRecord? {
-        let record = CKRecord(recordType: "CD_Photo")
-        record["CD_room"]        = roomCode
-        record["CD_user"]        = currentUserID
-        record["CD_userName"]    = userName
-        record["CD_imageData"]   = imageData as NSData
-        record["CD_thought"]     = thought
-        record["CD_emoji"]       = emoji
-        record["CD_uploadedAt"]  = Date()
+                     emoji: String, userName: String, profileImage: Data?) async {
+        var data: [String: Any] = [
+            "roomCode": roomCode,
+            "userID": currentUserID,
+            "userName": userName,
+            "imageBase64": imageData.base64EncodedString(),
+            "thought": thought,
+            "emoji": emoji,
+            "uploadedAt": Timestamp()
+        ]
         if let profileImage {
-            record["CD_userProfileImage"] = profileImage as NSData
+            data["profileImageBase64"] = profileImage.base64EncodedString()
         }
         do {
-            let saved = try await publicDB.save(record)
+            try await db.collection("photos").addDocument(data: data)
             print("✅ Photo uploaded")
-            return saved
         } catch {
             print("❌ uploadPhoto: \(error)")
-            return nil
         }
     }
 
-    func fetchPhotos(roomCode: String) async -> [CKRecord] {
-        let predicate = NSPredicate(format: "CD_room == %@", roomCode)
-        let query = CKQuery(recordType: "CD_Photo", predicate: predicate)
+    func fetchPhotos(roomCode: String) async -> [[String: Any]] {
         do {
-            let result = try await publicDB.records(matching: query)
-            let photos = result.matchResults.compactMap { try? $0.1.get() }
-            return photos.sorted {
-                ($0["CD_uploadedAt"] as? Date ?? .distantPast) >
-                ($1["CD_uploadedAt"] as? Date ?? .distantPast)
-            }
+            let snapshot = try await db.collection("photos")
+                .whereField("roomCode", isEqualTo: roomCode)
+                .order(by: "uploadedAt", descending: true)
+                .getDocuments()
+            return snapshot.documents.map { $0.data() }
         } catch {
             print("❌ fetchPhotos: \(error)")
             return []
@@ -153,45 +150,29 @@ class CloudKitManager {
     }
 
     // ─────────────────────────────────────────
-    // MARK: - Subscriptions
+    // MARK: - Realtime Listeners (بديل الـ Subscriptions)
     // ─────────────────────────────────────────
 
-    func subscribeToRoom(roomCode: String) {
-        let predicate = NSPredicate(format: "CD_code == %@", roomCode)
-        let sub = CKQuerySubscription(recordType: "CD_Room", predicate: predicate,
-                                      options: [.firesOnRecordUpdate])
-        let info = CKSubscription.NotificationInfo()
-        info.shouldSendContentAvailable = true
-        sub.notificationInfo = info
-        publicDB.save(sub) { _, error in
-            if let error { print("❌ subscribeToRoom: \(error)") }
-            else { print("✅ Subscribed to room updates") }
-        }
+    func listenToRoom(roomCode: String, onChange: @escaping ([String: Any]) -> Void) -> ListenerRegistration {
+        return db.collection("rooms").document(roomCode)
+            .addSnapshotListener { snapshot, _ in
+                if let data = snapshot?.data() {
+                    onChange(data)
+                }
+            }
     }
 
-    func subscribeToParticipants(roomCode: String) {
-        let predicate = NSPredicate(format: "CD_room == %@", roomCode)
-        let sub = CKQuerySubscription(recordType: "CD_RoomParticipant", predicate: predicate,
-                                      options: [.firesOnRecordCreation])
-        let info = CKSubscription.NotificationInfo()
-        info.shouldSendContentAvailable = true
-        sub.notificationInfo = info
-        publicDB.save(sub) { _, error in
-            if let error { print("❌ subscribeToParticipants: \(error)") }
-            else { print("✅ Subscribed to participants") }
-        }
+    func listenToParticipants(roomCode: String, onChange: @escaping ([[String: Any]]) -> Void) -> ListenerRegistration {
+        return db.collection("participants")
+            .whereField("roomCode", isEqualTo: roomCode)
+            .addSnapshotListener { snapshot, _ in
+                let participants = snapshot?.documents.map { $0.data() } ?? []
+                onChange(participants)
+            }
     }
 
-    func subscribeToPhotos(roomCode: String) {
-        let predicate = NSPredicate(format: "CD_room == %@", roomCode)
-        let sub = CKQuerySubscription(recordType: "CD_Photo", predicate: predicate,
-                                      options: [.firesOnRecordCreation])
-        let info = CKSubscription.NotificationInfo()
-        info.shouldSendContentAvailable = true
-        sub.notificationInfo = info
-        publicDB.save(sub) { _, error in
-            if let error { print("❌ subscribeToPhotos: \(error)") }
-            else { print("✅ Subscribed to photos") }
-        }
-    }
+    // للتوافق مع الكود القديم (ما يحتاج تغيير في hostView)
+    func subscribeToRoom(roomCode: String) {}
+    func subscribeToParticipants(roomCode: String) {}
+    func subscribeToPhotos(roomCode: String) {}
 }

@@ -2,49 +2,34 @@
 //  RoomFeed.swift
 //  Jisr
 //
-//  Created by Wteen Alghamdy on 04/12/1447 AH.
-//
 
 import SwiftUI
 import SwiftData
-import CloudKit
+import FirebaseFirestore
 
 struct RoomFeed: View {
     @Environment(\.modelContext) private var context
-    
+
     let room: Room
     let isHost: Bool
     @Binding var isShowingFeed: Bool
-    
+
     @State private var isShowingEndPopup = false
     @State private var isRoomFinished = false
-    
-    @State private var ckPhotos: [CKRecord] = []
-    @State private var roomRecordID: CKRecord.ID? = nil
-    @State private var refreshTimer: Timer? = nil
-    
-    var roomPhotos: [CKRecord] { ckPhotos }
-    
+    @State private var photos: [[String: Any]] = []
+    @State private var photosListener: ListenerRegistration? = nil
+
     let columns = [
         GridItem(.flexible(), spacing: 14),
         GridItem(.flexible(), spacing: 14)
     ]
-    
-    
-    
-    func loadPhotos() {
-        Task {
-            ckPhotos = await CloudKitManager.shared.fetchPhotos(roomCode: room.code)
-        }
-    }
-    
-    
+
     var body: some View {
         ZStack {
             VStack(spacing: 0) {
                 RoomHeader(
                     room: room,
-                    currentProgress: roomPhotos.count,
+                    currentProgress: photos.count,
                     maxPhotos: room.maxPhotos,
                     isShowingFeed: isShowingFeed,
                     onGalleryToggle: nil,
@@ -55,25 +40,37 @@ struct RoomFeed: View {
                     }
                 )
                 .padding(.vertical, 12)
-                
+
                 ScrollView(.vertical, showsIndicators: false) {
-                    if roomPhotos.isEmpty {
+                    if photos.isEmpty {
                         VStack(spacing: 12) {
                             Spacer().frame(height: 120)
-                            Image(systemName: "photo.on.rectangle.angled").font(.system(size: 48)).foregroundColor(.black.opacity(0.12))
-                            Text("No photos captured yet").font(.UbuntuBold(size: 16)).foregroundColor(.black.opacity(0.4))
+                            Image(systemName: "photo.on.rectangle.angled")
+                                .font(.system(size: 48))
+                                .foregroundColor(.black.opacity(0.12))
+                            Text("No photos captured yet")
+                                .font(.UbuntuBold(size: 16))
+                                .foregroundColor(.black.opacity(0.4))
                         }
                         .padding(.horizontal, 40)
                     } else {
                         LazyVGrid(columns: columns, spacing: 16) {
-                            ForEach(ckPhotos, id: \.recordID) { photo in
-                                let thought = photo["CD_thought"] as? String ?? ""
+                            ForEach(Array(photos.enumerated()), id: \.offset) { _, photo in
+                                let thought = photo["thought"] as? String ?? ""
+                                let imageData: Data? = {
+                                    guard let base64 = photo["imageBase64"] as? String else { return nil }
+                                    return Data(base64Encoded: base64)
+                                }()
+                                let profileData: Data? = {
+                                    guard let base64 = photo["profileImageBase64"] as? String else { return nil }
+                                    return Data(base64Encoded: base64)
+                                }()
                                 FeedCard(
-                                    userName: photo["CD_userName"] as? String ?? "Member",
-                                    userImageData: photo["CD_userProfileImage"] as? Data,
+                                    userName: photo["userName"] as? String ?? "Member",
+                                    userImageData: profileData,
                                     thoughtText: thought.isEmpty ? "Capturing the moment!" : thought,
-                                    emojiReaction: photo["CD_emoji"] as? String ?? "😊",
-                                    imageData: photo["CD_imageData"] as? Data
+                                    emojiReaction: photo["emoji"] as? String ?? "😊",
+                                    imageData: imageData
                                 )
                             }
                         }
@@ -83,8 +80,7 @@ struct RoomFeed: View {
                     }
                 }
             }
-            
-            // 💡 حصر صلاحية زر إنهاء الروم السفلي للهوست فقط، وضبط توسيط الأبعاد (width: 200) لفيجما
+
             if isHost {
                 VStack {
                     Spacer()
@@ -94,7 +90,7 @@ struct RoomFeed: View {
                         Text("End Room")
                             .font(.UbuntuBold(size: 20))
                             .foregroundColor(.white)
-                            .frame(width: 200, height: 58) // الأبعاد الملمومة المتمركزة بالسنتر بدقة
+                            .frame(width: 200, height: 58)
                             .background(Color(red: 0.18, green: 0.18, blue: 0.18))
                             .clipShape(RoundedRectangle(cornerRadius: 99))
                             .shadow(color: .black.opacity(0.08), radius: 10, x: 0, y: 6)
@@ -103,18 +99,18 @@ struct RoomFeed: View {
                     .padding(.bottom, 16)
                 }
             }
-            
+
             if isShowingEndPopup {
                 EndRoomPopup(
                     isPresented: $isShowingEndPopup,
                     onConfirmEnd: {
                         Task {
-                            guard let recordID = roomRecordID else { return }
-                            await CloudKitManager.shared.updateRoom(recordID: recordID, isClosed: 1)
+                            await CloudKitManager.shared.updateRoom(roomCode: room.code, isClosed: true)
                         }
                         room.isClosed = true
                         try? context.save()
-                        isRoomFinished = true                    }
+                        isRoomFinished = true
+                    }
                 )
                 .transition(.opacity)
             }
@@ -124,26 +120,19 @@ struct RoomFeed: View {
         .navigationDestination(isPresented: $isRoomFinished) {
             RoomSummary(room: room)
         }
-        
         .onAppear {
-            loadPhotos()
-            Task {
-                if let record = await CloudKitManager.shared.fetchRoom(byCode: room.code) {
-                    roomRecordID = record.recordID
+            // ✅ Realtime listener بدل Timer
+            photosListener = Firestore.firestore()
+                .collection("photos")
+                .whereField("roomCode", isEqualTo: room.code)
+                .order(by: "uploadedAt", descending: true)
+                .addSnapshotListener { snapshot, _ in
+                    photos = snapshot?.documents.map { $0.data() } ?? []
                 }
-            }
-            refreshTimer = Timer.scheduledTimer(withTimeInterval: 3.0, repeats: true) { _ in
-                loadPhotos()
-            }
         }
         .onDisappear {
-            refreshTimer?.invalidate()
+            photosListener?.remove()
         }
-        
-        .onReceive(NotificationCenter.default.publisher(for: .cloudKitDataChanged)) { _ in
-            loadPhotos()
-        }
-        
     }
 }
 
@@ -151,10 +140,7 @@ struct RoomFeed: View {
     let config = ModelConfiguration(isStoredInMemoryOnly: true)
     let container = try! ModelContainer(for: Room.self, User.self, Photo.self, configurations: config)
     let sampleRoom = Room(name: "Mission District Mural Hunt", code: "JSR-659", category: "Creative", location: "Outdoor", maxPhotos: 9)
-    let sampleUser = User(name: "Wteen Alghamdy")
     container.mainContext.insert(sampleRoom)
-    container.mainContext.insert(sampleUser)
-    
     return RoomFeed(room: sampleRoom, isHost: true, isShowingFeed: .constant(true))
         .modelContainer(container)
 }

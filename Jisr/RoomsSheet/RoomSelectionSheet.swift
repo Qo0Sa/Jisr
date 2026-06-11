@@ -201,27 +201,27 @@ struct RoomSelectionSheet: View {
 //        // ✅ ارفع الروم في CloudKit Public عشان شخص ٢ يشوفها
 //        saveToCloudKit(room: newRoom)
         
-        Task {
-            await CloudKitManager.shared.createRoom(
-                name: newRoom.name,
-                code: newRoom.code,
-                category: newRoom.category,
-                location: newRoom.location,
-                maxPhotos: newRoom.maxPhotos,
-                missionTitle: newRoom.missionTitle ?? "",
-                missionDescription: newRoom.missionDescription ?? ""
-            )
-            let descriptor = FetchDescriptor<User>()
-            if let currentUser = try? context.fetch(descriptor).first {
-                await CloudKitManager.shared.addParticipant(
-                    roomCode: newRoom.code,
-                    userName: currentUser.name,
-                    profileImage: currentUser.profileImage,
-                    isHost: true
-                )
-            }
-            CloudKitManager.shared.subscribeToParticipants(roomCode: newRoom.code)
-        }
+//        Task {
+//            //await CloudKitManager.shared.createRoom(
+//                name: newRoom.name,
+//                code: newRoom.code,
+//                category: newRoom.category,
+//                location: newRoom.location,
+//                maxPhotos: newRoom.maxPhotos,
+//                missionTitle: newRoom.missionTitle ?? "",
+//                missionDescription: newRoom.missionDescription ?? ""
+//            )
+//            let descriptor = FetchDescriptor<User>()
+//            if let currentUser = try? context.fetch(descriptor).first {
+//             //   await CloudKitManager.shared.addParticipant(
+//                    roomCode: newRoom.code,
+//                    userName: currentUser.name,
+//                    profileImage: currentUser.profileImage,
+//                    isHost: true
+//                )
+//            }
+//          //  CloudKitManager.shared.subscribeToParticipants(roomCode: newRoom.code)
+//        }
         
         
         isPresented = false

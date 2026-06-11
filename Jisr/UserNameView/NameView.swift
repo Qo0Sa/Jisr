@@ -91,7 +91,9 @@ struct NameView: View {
                         goToMain = true
                         // fetchAndSaveiCloudID تشتغل في الخلفية بدون تعليق
                         Task.detached(priority: .background) {
-                            viewModel.fetchAndSaveiCloudID()
+                            await MainActor.run {
+                                viewModel.signInAnonymously()
+                            }
                         }
                     }
                 }  label: {

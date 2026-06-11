@@ -1,34 +1,17 @@
 //
-//  host.swift
+//  hostView.swift
 //  Jisr
 //
-//  Created by Wed Ahmed Alasiri on 12/05/2026.
-// in ai  لازم احط خانه للاسم المشن و دسكربشن عنها لازم
-// add Dynamic type in accessibility
 
-//
-//  host.swift
-//  Jisr
-//
-//  Created by Wed Ahmed Alasiri on 12/05/2026.
-// in ai  لازم احط خانه للاسم المشن و دسكربشن عنها لازم
-// add Dynamic type in accessibility🔴
-// غيري الخط حق المودل
-//اربطي الصفحه ذي بالصفحه وتين الكاميرا
-//تاكدي من انه سويتي نفس الشي للقست
-// اتاكد من الداتا بيس
 import SwiftUI
 import CoreML
 import SwiftData
-import CloudKit
+import FirebaseFirestore
 
 struct WaitingRoomView: View {
-    
-    
-    @Binding var waitingDestination: WaitingDestination?
 
+    @Binding var waitingDestination: WaitingDestination?
     @State private var copied = false
-   
     var isStarted: Bool = false
     @Environment(\.dismiss) private var dismiss
 
@@ -36,6 +19,7 @@ struct WaitingRoomView: View {
 
     @State private var missionTitle = ""
     @State private var missionDescription = ""
+
     var backgroundImageName: String {
         switch room.category {
         case "Cognitive": return "bluebg"
@@ -43,7 +27,7 @@ struct WaitingRoomView: View {
         default:          return "yellowbg"
         }
     }
-    
+
     var backgroundForBtn: String {
         switch room.category {
         case "Cognitive": return "backbtnblue"
@@ -51,128 +35,81 @@ struct WaitingRoomView: View {
         default:          return "back bg"
         }
     }
-    
-    
+
     @State private var goToCamera = false
- //   @State private var goToMain = false
-    
-    @State private var ckParticipants: [CKRecord] = []
-    @State private var roomRecordID: CKRecord.ID? = nil
-    @State private var refreshTimer: Timer? = nil
-    
-    
+    @State private var participants: [[String: Any]] = []
+    @State private var roomListener: ListenerRegistration? = nil
+    @State private var participantsListener: ListenerRegistration? = nil
+
     @Environment(\.modelContext) private var context
+
     var body: some View {
-        ZStack(alignment: .bottom) { // جعل العناصر تترتب فوق بعضها
-            
-            // 1. الخلفية الثابتة
+        ZStack(alignment: .bottom) {
+
             Image(backgroundImageName)
                 .resizable()
                 .scaledToFill()
                 .ignoresSafeArea()
-            
-            // 2. المحتوى الأساسي
-            VStack {
-                
-                
-                // MARK: Header & Mission & Code (العناصر الثابتة في الأعلى)
-                VStack {
-                    
-                    // الهيدر
-                    HStack {
 
-                        // ثم في الزر:
-                        Button(action: {
-                            dismiss()
-                        }) {
+            VStack {
+
+                VStack {
+
+                    HStack {
+                        Button(action: { dismiss() }) {
                             Image(systemName: "chevron.left")
                                 .font(.system(size: 24, weight: .bold))
                                 .foregroundColor(.black)
                         }
-                        
                         Spacer()
                         Text(room.name)
                             .font(.UbuntuBold(size: 22))
-
-//                            .font(.system(size: 22, weight: .bold))
                         Spacer()
                         Color.clear.frame(width: 24)
                     }
-                    //                    .padding(.top, 10)
-                    .offset(y:-30)
-                    
-                    // بطاقة المهمة
+                    .offset(y: -30)
+
                     VStack(alignment: .leading, spacing: 12) {
-                        
                         HStack(alignment: .top) {
-
-                              Text(missionTitle)
+                            Text(missionTitle)
                                 .font(.system(size: 20))
-//                                 .font(.system(size: 20, weight: .medium))
-                                 .foregroundColor(.black.opacity(0.75))
-
+                                .foregroundColor(.black.opacity(0.75))
                             Spacer()
-                                Button(action: {
-                                    generateMission()
-                                    }) {
-                                        Image(systemName: "arrow.trianglehead.2.clockwise")
-                                            .font(.system(size: 20))
-                                            .foregroundColor(.black.opacity(0.75))
-                                        }
-                                    }
+                            Button(action: { generateMission() }) {
+                                Image(systemName: "arrow.trianglehead.2.clockwise")
+                                    .font(.system(size: 20))
+                                    .foregroundColor(.black.opacity(0.75))
+                            }
+                        }
 
-                                    Text(missionDescription)
-                                          .font(.system(size: 14))
-//                                        .font(.system(size: 14))
-                                        .foregroundColor(.black.opacity(0.7))
-                                        .padding(16)
-                                        .frame(maxWidth: .infinity, alignment: .leading)
-                                        .background(Color(red: 248/255,
-                                                          green: 242/255,
-                                                          blue: 230/255))
-                                        .cornerRadius(18)
+                        Text(missionDescription)
+                            .font(.system(size: 14))
+                            .foregroundColor(.black.opacity(0.7))
+                            .padding(16)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .background(Color(red: 248/255, green: 242/255, blue: 230/255))
+                            .cornerRadius(18)
+                    }
+                    .padding(16)
+                    .background(Color(red: 244/255, green: 242/255, blue: 237/255))
+                    .cornerRadius(24)
+                    .overlay(RoundedRectangle(cornerRadius: 24).stroke(Color.black.opacity(0.7), lineWidth: 1))
+                    .shadow(color: .black.opacity(0.4), radius: 0, x: 0, y: 3)
+                    .padding(.horizontal, -10)
+                    .offset(y: -120)
 
-                                }
-                                .padding(16)
-                                .background(Color(red: 244/255, green: 242/255, blue: 237/255))
-                                .cornerRadius(24)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 24)
-                                        .stroke(Color.black.opacity(0.7), lineWidth: 1)
-                                )
-                                .shadow(color: .black.opacity(0.4), radius: 0, x: 0, y: 3)
-                                .padding(.horizontal, -10)
-                     //         .padding(.top, 22)
-                                .offset(y: -120)
-                    
-                    // زر النسخ (نهاية العناصر الثابتة)
                     HStack {
-                        Label("\(ckParticipants.count)", systemImage: "person.fill")
-                        
-//                        Spacer()
-//                            .offset(x:-10)
-                        
+                        Label("\(participants.count)", systemImage: "person.fill")
+
                         HStack {
-
-                            Text(room.code)
-                                .foregroundColor(.gray)
-
+                            Text(room.code).foregroundColor(.gray)
                             Button(action: {
-
                                 UIPasteboard.general.string = room.code
-                                withAnimation {
-                                    copied = true
-                                }
-
+                                withAnimation { copied = true }
                                 DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-
-                                    withAnimation {
-                                        copied = false
-                                    }
+                                    withAnimation { copied = false }
                                 }
-
                             }) {
-
                                 Image(systemName: copied ? "checkmark" : "document.on.document")
                                     .foregroundColor(copied ? .green : .gray)
                                     .contentTransition(.symbolEffect(.replace))
@@ -182,8 +119,7 @@ struct WaitingRoomView: View {
                         .padding(.vertical, 8)
                         .background(Color.white.opacity(0.9))
                         .cornerRadius(20)
-                        
-                        
+
                         ShareLink(
                             item: """
                             Join my room in Jisr
@@ -201,272 +137,150 @@ struct WaitingRoomView: View {
                                 .foregroundColor(.black)
                         }
                     }
-                    .offset(y:-100)
-                    
+                    .offset(y: -100)
                 }
                 .padding(.horizontal, 25)
-                
-                
-                // MARK: ScrollView (تبدأ من هنا وتأخذ باقي الشاشة)
+
                 ScrollView(showsIndicators: false) {
                     VStack(spacing: 15) {
-//                        // قائمة المستخدمين
-//                        ForEach(room.participants, id: \.persistentModelID) { participant in
-//
-//                            UserCard(
-//                                name: participant.user?.name ?? "Unknown",
-//                                imageData: participant.user?.profileImage
-//                            )
-//                        }
-                        // وحطي هذا ↓
-                        ForEach(ckParticipants, id: \.recordID) { participant in
+                        ForEach(Array(participants.enumerated()), id: \.offset) { _, participant in
                             UserCard(
-                                name: participant["CD_userName"] as? String ?? "Unknown",
-                                imageData: participant["CD_userProfileImage"] as? Data
+                                name: participant["userName"] as? String ?? "Unknown",
+                                profileImageBase64: participant["profileImageBase64"] as? String
                             )
                         }
-                        
-                        // مساحة إضافية في نهاية السكرول عشان آخر اسم ما يغطي عليه زر الـ Start
                         Color.clear.frame(height: 30)
                     }
-//                    .padding(.top, 20)
                     .padding(.horizontal)
-                    .padding(.vertical,40)
-
+                    .padding(.vertical, 40)
                 }
                 .frame(maxWidth: .infinity, alignment: .center)
-                .offset(y:-90)
-                
+                .offset(y: -90)
             }
-            
-            // 3. زر Start الثابت (في طبقة أعلى ZStack)
+
             VStack {
                 ZStack(alignment: .bottom) {
-                    
-                    // 1. الصورة اللي تبيها تكون خلفية للزر
-                    Image(backgroundForBtn) // تأكد من اسم الصورة عندك
+                    Image(backgroundForBtn)
                         .resizable()
                         .scaledToFill()
-                        .frame(height: 160) // ارتفاع المنطقة اللي تغطي السكرول من تحت
+                        .frame(height: 160)
                         .clipped()
-//                    // القناع هو اللي يسوي حركة التلاشي (Fade)
-//                        .mask(
-//                            LinearGradient(
-//                                gradient: Gradient(colors: [.clear, .black]), // من شفاف إلى ظاهر
-//                                startPoint: .top,
-//                                endPoint: .bottom
-//                            )
-//                        )
-//                        .offset(y:-30)
-                    
-                    // 2. زر البدء
+
                     Button(action: {
                         room.isStarted = true
-                        
                         room.missionTitle = missionTitle
                         room.missionDescription = missionDescription
                         try? context.save()
-                        
-                        sendStartNotification()
-                        
+                        Task {
+                            await CloudKitManager.shared.updateRoom(roomCode: room.code, isStarted: true)
+                        }
                         goToCamera = true
                     }) {
                         Text("Start")
                             .font(.UbuntuBold(size: 24))
-//                            .font(.system(size: 24, weight: .bold))
                             .foregroundColor(.white)
                             .frame(width: 220, height: 65)
                             .background(Color(red: 0.15, green: 0.15, blue: 0.15))
                             .cornerRadius(35)
                             .shadow(color: .black.opacity(0.3), radius: 10, x: 0, y: 5)
                     }
-                    .padding(.bottom, 40) // ارفعه شوي عن الحافة السفلية
-                    
-                    
+                    .padding(.bottom, 40)
                 }
-                .ignoresSafeArea() // يخلي التدرج يوصل لآخر الشاشة
+                .ignoresSafeArea()
             }
         }
-        
         .navigationDestination(isPresented: $goToCamera) {
-            CameraView(
-                  room: room,
-                  isHost: true
-              )
+            CameraView(room: room, isHost: true)
         }
-//        .navigationDestination(isPresented: $goToMain) {
-//            MainView()
-//        }
-        
         .navigationBarHidden(true)
         .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("DismissRoomFlow"))) { _ in
             goToCamera = false
         }
         .onAppear {
             generateMission()
-            loadParticipants()
-            Task {
-                if let record = await CloudKitManager.shared.fetchRoom(byCode: room.code) {
-                    roomRecordID = record.recordID
-                }
-            }
-            refreshTimer = Timer.scheduledTimer(withTimeInterval: 3.0, repeats: true) { _ in
-                loadParticipants()
+            // ✅ Realtime listener بدل Timer
+            participantsListener = CloudKitManager.shared.listenToParticipants(roomCode: room.code) { updated in
+                participants = updated
             }
         }
         .onDisappear {
-            refreshTimer?.invalidate()
+            participantsListener?.remove()
+            roomListener?.remove()
         }
-        
-        .onReceive(NotificationCenter.default.publisher(for: .cloudKitDataChanged)) { _ in
-            loadParticipants()
-        }
-        
     }
-    
-    
-    
-    
-    
+
     func generateMission() {
         do {
             let config = MLModelConfiguration()
             let model = try jisr_test_1(configuration: config)
-            
-            let output = try model.prediction(
-                Category: room.category,
-                Location_Type: room.location
-            )
-            
+            let output = try model.prediction(Category: room.category, Location_Type: room.location)
             let availablePrompts = Array(output.PromptProbability.keys)
             let chosenPrompt = availablePrompts.randomElement() ?? output.Prompt
-            
-            // Format is: "Mission Title (Description text here)"
             if let openParen = chosenPrompt.firstIndex(of: "("),
                let closeParen = chosenPrompt.lastIndex(of: ")") {
-//
-//                missionTitle = String(chosenPrompt[..<openParen])
-//                    .trimmingCharacters(in: .whitespaces)
-//
-//                let descStart = chosenPrompt.index(after: openParen)
-//                missionDescription = String(chosenPrompt[descStart..<closeParen])
-//                    .trimmingCharacters(in: .whitespaces)
-                let title = String(chosenPrompt[..<openParen])
-                    .trimmingCharacters(in: .whitespaces)
-
+                let title = String(chosenPrompt[..<openParen]).trimmingCharacters(in: .whitespaces)
                 let descStart = chosenPrompt.index(after: openParen)
-                let description = String(chosenPrompt[descStart..<closeParen])
-                    .trimmingCharacters(in: .whitespaces)
-
+                let description = String(chosenPrompt[descStart..<closeParen]).trimmingCharacters(in: .whitespaces)
                 missionTitle = title
                 missionDescription = description
-
                 room.missionTitle = title
                 room.missionDescription = description
                 try? context.save()
-                
             } else {
-                // Fallback if format is unexpected
                 missionTitle = "Mission"
                 missionDescription = chosenPrompt
             }
-            
         } catch {
             missionDescription = "Could not load mission."
             missionTitle = "Mission"
-            print(error.localizedDescription)
         }
     }
-    
-    func sendStartNotification() {
-        Task {
-            guard let recordID = roomRecordID else { return }
-            await CloudKitManager.shared.updateRoom(recordID: recordID, isStarted: 1)
-        }
-    }
-    
-    func loadParticipants() {
-        Task {
-            ckParticipants = await CloudKitManager.shared.fetchParticipants(roomCode: room.code)
-        }
-    }
-    
-    
-    
-    func handleStartNotification() {
 
-        goToCamera = true
-
-    }
-    
-    // كرت المستخدم (نفسه بدون تغيير)
     struct UserCard: View {
-        
         let name: String
-        let imageData: Data?
+        let profileImageBase64: String?
+
+        var uiImage: UIImage? {
+            guard let base64 = profileImageBase64,
+                  let data = Data(base64Encoded: base64) else { return nil }
+            return UIImage(data: data)
+        }
 
         var body: some View {
-
             HStack(spacing: 15) {
-
-                if let imageData,
-                   let uiImage = UIImage(data: imageData) {
-
-                    Image(uiImage: uiImage)
+                if let img = uiImage {
+                    Image(uiImage: img)
                         .resizable()
                         .scaledToFill()
                         .frame(width: 50, height: 50)
                         .clipShape(Circle())
                         .offset(x: -10)
-
                 } else {
                     Circle()
-                            .fill(Color.black.opacity(0.08))
-                            .frame(width: 50, height: 50)
-                            .overlay {
-
-                                if !name.isEmpty {
-
-                                    Text(String(name.prefix(1)).uppercased())
-                                        .font(.system(size: 20, weight: .bold))
-                                        .foregroundColor(.black.opacity(0.6))
-
-                                } else {
-
-                                    Image(systemName: "person.fill")
-                                        .foregroundColor(.black.opacity(0.3))
-                                }
-                            }
+                        .fill(Color.black.opacity(0.08))
+                        .frame(width: 50, height: 50)
+                        .overlay {
+                            Text(String(name.prefix(1)).uppercased())
+                                .font(.system(size: 20, weight: .bold))
+                                .foregroundColor(.black.opacity(0.6))
+                        }
                 }
-
                 Spacer()
                 Text(name)
                     .font(.UbuntuBold(size: 18))
-//                    .font(.system(size: 18, weight: .bold))
                     .foregroundColor(.black.opacity(0.8))
-                    .padding(.trailing, 60) // ← يعطي مساحة بعد الاسم
-
+                    .padding(.trailing, 60)
             }
             .padding(.horizontal, 18)
             .padding(.vertical, 6)
             .background(Color.white.opacity(0.6))
             .cornerRadius(45)
-            .fixedSize() // ✨ هذا المهم
+            .fixedSize()
         }
     }
 }
+
 #Preview {
-    
-    let previewRoom = Room(
-        name: "Creative Room",
-        code: "ABC-123",
-        category: "Creative",
-        location: "Outdoor",
-        maxPhotos: 5
-    )
-    
-    WaitingRoomView(
-            waitingDestination: .constant(nil),
-            room: previewRoom
-        )
+    let previewRoom = Room(name: "Creative Room", code: "ABC-123", category: "Creative", location: "Outdoor", maxPhotos: 5)
+    WaitingRoomView(waitingDestination: .constant(nil), room: previewRoom)
 }

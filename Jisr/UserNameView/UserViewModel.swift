@@ -2,65 +2,50 @@
 //  UserViewModel.swift
 //  Jisr
 //
-//  Created by Sarah on 24/11/1447 AH.
-//
 
 import SwiftUI
 import PhotosUI
 import SwiftData
-import CloudKit
+import FirebaseAuth
+
 @Observable
 class UserViewModel {
     var name = ""
     var selectedPhoto: PhotosPickerItem?
     var profileImage: Image?
     var profileImageData: Data?
-    
-    var isValid: Bool {
-        !name.isEmpty
-    }
-  
+
+    var isValid: Bool { !name.isEmpty }
+
     func loadImage() async {
         guard let item = selectedPhoto else { return }
-        
-        // ✅ شغّل على background thread
-        guard let data = try? await item.loadTransferable(type: Data.self) else { return }
-        guard let uiImage = UIImage(data: data) else { return }
-        
-        // ✅ رجّع للـ Main Thread بس للـ UI
+        guard let data = try? await item.loadTransferable(type: Data.self),
+              let uiImage = UIImage(data: data) else { return }
         await MainActor.run {
             profileImage = Image(uiImage: uiImage)
             profileImageData = data
         }
     }
-    
-    
-    func fetchAndSaveiCloudID() {
-        CKContainer.default().fetchUserRecordID { recordID, error in
-            guard let id = recordID?.recordName else { return }
-            UserDefaults.standard.set(id, forKey: "iCloudUserID")
-            print("✅ iCloud ID saved: \(id)")
+
+    func signInAnonymously() {
+        if Auth.auth().currentUser != nil { return }
+        Auth.auth().signInAnonymously { result, error in
+            if let error { print("❌ Firebase Auth: \(error.localizedDescription)"); return }
+            if let uid = result?.user.uid {
+                UserDefaults.standard.set(uid, forKey: "iCloudUserID")
+                print("✅ Firebase UID: \(uid)")
+            }
         }
     }
-    
-    
-//    func saveUser(context: ModelContext) {
-//        let user = User(name: name, profileImage: profileImageData)
-//        context.insert(user)
-//    }
+
     func saveUser(context: ModelContext) {
         let user = User(name: name, profileImage: profileImageData)
         context.insert(user)
         do {
-                    try context.save()
-                    print("✅ User saved and context synced: \(user.name)")
-                } catch {
-                    print("❌ Failed to save context: \(error.localizedDescription)")
-                }
+            try context.save()
+            print("✅ User saved: \(user.name)")
+        } catch {
+            print("❌ Failed to save: \(error.localizedDescription)")
+        }
     }
-    
-    
-    
-    
-    
 }

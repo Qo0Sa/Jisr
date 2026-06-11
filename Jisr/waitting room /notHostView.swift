@@ -1,210 +1,11 @@
-////
-////  notHostView.swift
-////  Jisr
-////
-////  Created by Wed Ahmed Alasiri on 17/05/2026.
-////
 //
+//  notHostView.swift
+//  Jisr
 //
-//
-//import SwiftUI
-//import SwiftData
-//
-//struct WaitingRoomForNotHostView: View {
-//
-////    let room: Room
-//    let roomCode: String
-//    
-//    @State private var goToCamera = false
-//    
-//    @State private var goToMain = false
-//    
-//    @Query private var rooms: [Room]
-//
-//    var room: Room? {
-//        rooms.first(where: { $0.code == roomCode })
-//    }
-//    var body: some View {
-//        if let room {
-//            Text(room.name)
-//        }
-//       
-//        ZStack(alignment: .bottom) { // جعل العناصر تترتب فوق بعضها
-//            
-//            // 1. الخلفية الثابتة
-//            Image("yellowbg")
-//                .resizable()
-//                .scaledToFill()
-//                .ignoresSafeArea()
-//            
-//            // 2. المحتوى الأساسي
-//            VStack {
-//                
-//                
-//                // MARK: Header & Mission & Code (العناصر الثابتة في الأعلى)
-//                VStack {
-//                    
-//                    // الهيدر
-//                    HStack {
-//                        Button(action: {
-//                            goToMain = true
-//
-//                        }) {
-//                            Image(systemName: "chevron.left")
-//                                .font(.system(size: 24, weight: .bold))
-//                                .foregroundColor(.black)
-//                        }
-//                        Spacer()
-//                        Text(room.name)
-//                            .font(.system(size: 22, weight: .bold))
-//                        Spacer()
-//                        Color.clear.frame(width: 24)
-//                    }
-//                    //                    .padding(.top, 10)
-//                    .offset(y:-30)
-//                    
-//                    // بطاقة المهمة
-//                    VStack(alignment: .leading, spacing: 12) {
-//                        
-//                        HStack(alignment: .top) {
-//                            
-//                            Text(room.missionTitle ?? "")
-//                                .font(.system(size: 20, weight: .medium))
-//                                .foregroundColor(.black.opacity(0.75))
-//                            
-//                            Spacer()
-//                            //                                    Button(action: {
-//                            //
-//                            //                                        }) {
-//                            Image(systemName: "arrow.trianglehead.2.clockwise")
-//                                .font(.system(size: 20))
-//                                .foregroundColor(.black.opacity(0.75))
-//                            //                                            }
-//                            //                                        }
-//                            
-//                            Text(room.missionDescription ?? "")
-//                                .font(.system(size: 14))
-//                                .foregroundColor(.black.opacity(0.7))
-//                                .padding(16)
-//                                .frame(maxWidth: .infinity, alignment: .leading)
-//                                .background(Color(red: 233/255, green: 227/255, blue: 214/255))
-//                                .cornerRadius(18)
-//                            
-//                        }
-//                        .padding(16)
-//                        .background(Color(red: 244/255, green: 242/255, blue: 237/255))
-//                        .cornerRadius(24)
-//                        .overlay(
-//                            RoundedRectangle(cornerRadius: 24)
-//                                .stroke(Color.black.opacity(0.7), lineWidth: 1)
-//                        )
-//                        .shadow(color: .black.opacity(0.4), radius: 0, x: 0, y: 3)
-//                        .padding(.horizontal, -10)
-//                        //         .padding(.top, 22)
-//                        .offset(y: -120)
-//                        
-//                        // زر النسخ (نهاية العناصر الثابتة)
-//                        HStack {
-//                            Label("5", systemImage: "person.fill")
-//                            
-//                        }
-//                        .offset(y:-100)
-//                        
-//                    }
-//                    .padding(.horizontal, 25)
-//                    
-//                    
-//                    // MARK: ScrollView (تبدأ من هنا وتأخذ باقي الشاشة)
-//                    ScrollView(showsIndicators: false) {
-//                        VStack(spacing: 15) {
-//
-//                            ForEach(room.participants, id: \.persistentModelID) { participant in
-//                                UserCard(
-//                                    name: participant.user?.name ?? "Unknown",
-//                                    imageData: participant.user?.profileImage
-//                                )
-//                            }
-//                            }
-//
-//                            Color.clear.frame(height: 30)
-//                        }
-//                        .padding(.horizontal)
-//                        .padding(.vertical, 40)
-//                    }
-//                    .frame(maxWidth: .infinity, alignment: .center)
-//                    .offset(y:-90)
-//                    
-//                }
-//                
-//                
-//            }
-//        }
-//        
-//        .navigationDestination(isPresented: $goToCamera) {
-//            CameraView(
-//                room: room,
-//                isHost: false
-//            )
-//        }
-//        .onChange(of: room.isStarted) { _, started in
-//            if started {
-//                goToCamera = true
-//            }
-//        }
-//        .navigationDestination(isPresented: $goToMain) {
-//            MainView()
-//        }
-//        .navigationBarHidden(true)
-//        
-//        .onChange(of: room.isStarted) { _, started in
-//            if started {
-//                goToCamera = true
-//            }
-//        }
-//    }
-//        // كرت المستخدم (نفسه بدون تغيير)
-//struct UserCard: View {
-//    let name: String
-//    let imageData: Data?
-//
-//    var body: some View {
-//        HStack(spacing: 15) {
-//
-//            if let imageData,
-//               let uiImage = UIImage(data: imageData) {
-//                Image(uiImage: uiImage)
-//                    .resizable()
-//                    .scaledToFill()
-//                    .frame(width: 60, height: 60)
-//                    .clipShape(Circle())
-//            } else {
-//                Circle()
-//                    .fill(Color.gray.opacity(0.2))
-//                    .frame(width: 60, height: 60)
-//                    .overlay {
-//                        Text(String(name.prefix(1)).uppercased())
-//                    }
-//            }
-//
-//            Spacer()
-//
-//            Text(name)
-//                .font(.system(size: 18, weight: .bold))
-//        }
-//    }
-//}
-//    
-//    
-////
-////#Preview {
-////    WaitingRoomForNotHostView(room: <#Room#>)
-////}
-// 
 
 import SwiftUI
 import SwiftData
-import CloudKit
-
+import FirebaseFirestore
 
 struct WaitingRoomForNotHostView: View {
 
@@ -212,70 +13,61 @@ struct WaitingRoomForNotHostView: View {
 
     @State private var goToCamera = false
     @State private var goToMain = false
-    
-    @State private var ckParticipants: [CKRecord] = []
-    @State private var ckRoom: CKRecord? = nil
-    @State private var refreshTimer: Timer? = nil
-    
-    
+    @State private var participants: [[String: Any]] = []
+    @State private var participantsListener: ListenerRegistration? = nil
+    @State private var roomListener: ListenerRegistration? = nil
+
     @Query private var rooms: [Room]
 
     var room: Room? {
         rooms.first(where: { $0.code == roomCode })
     }
 
+    var backgroundImageName: String {
+        switch room?.category {
+        case "Cognitive": return "bluebg"
+        case "Physical":  return "greenbg"
+        default:          return "yellowbg"
+        }
+    }
+
     var body: some View {
         Group {
             if let room = room {
-
                 ZStack(alignment: .bottom) {
 
-                    Image("yellowbg")
+                    Image(backgroundImageName)
                         .resizable()
                         .scaledToFill()
                         .ignoresSafeArea()
 
                     VStack {
-
                         VStack {
 
-                            // HEADER
                             HStack {
-                                Button(action: {
-                                    goToMain = true
-                                }) {
+                                Button(action: { goToMain = true }) {
                                     Image(systemName: "chevron.left")
                                         .font(.system(size: 24, weight: .bold))
                                         .foregroundColor(.black)
                                 }
-
                                 Spacer()
-
                                 Text(room.name)
-                                    .font(.system(size: 22, weight: .bold))
-
+                                    .font(.UbuntuBold(size: 22))
                                 Spacer()
-
                                 Color.clear.frame(width: 24)
                             }
                             .offset(y: -30)
 
-                            // MISSION CARD
                             VStack(alignment: .leading, spacing: 12) {
-
                                 HStack(alignment: .top) {
-
                                     Text(room.missionTitle ?? "")
                                         .font(.system(size: 20, weight: .medium))
                                         .foregroundColor(.black.opacity(0.75))
-
                                     Spacer()
-
                                     Image(systemName: "arrow.trianglehead.2.clockwise")
                                         .font(.system(size: 20))
                                         .foregroundColor(.black.opacity(0.75))
                                 }
-
                                 Text(room.missionDescription ?? "")
                                     .font(.system(size: 14))
                                     .foregroundColor(.black.opacity(0.7))
@@ -283,36 +75,28 @@ struct WaitingRoomForNotHostView: View {
                                     .frame(maxWidth: .infinity, alignment: .leading)
                                     .background(Color(red: 233/255, green: 227/255, blue: 214/255))
                                     .cornerRadius(18)
-
                             }
                             .padding(16)
                             .background(Color(red: 244/255, green: 242/255, blue: 237/255))
                             .cornerRadius(24)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 24)
-                                    .stroke(Color.black.opacity(0.7), lineWidth: 1)
-                            )
+                            .overlay(RoundedRectangle(cornerRadius: 24).stroke(Color.black.opacity(0.7), lineWidth: 1))
                             .shadow(color: .black.opacity(0.4), radius: 0, x: 0, y: 3)
                             .padding(.horizontal, -10)
                             .offset(y: -120)
 
-                            // PARTICIPANTS COUNT
                             HStack {
-                                Label("\(ckParticipants.count)", systemImage: "person.fill")
+                                Label("\(participants.count)", systemImage: "person.fill")
                             }
                             .offset(y: -100)
-
                         }
                         .padding(.horizontal, 25)
 
-                        // LIST
                         ScrollView(showsIndicators: false) {
                             VStack(spacing: 15) {
-
-                                ForEach(ckParticipants, id: \.recordID) { participant in
+                                ForEach(Array(participants.enumerated()), id: \.offset) { _, participant in
                                     UserCard(
-                                        name: participant["CD_userName"] as? String ?? "Unknown",
-                                        imageData: participant["CD_userProfileImage"] as? Data
+                                        name: participant["userName"] as? String ?? "Unknown",
+                                        profileImageBase64: participant["profileImageBase64"] as? String
                                     )
                                 }
                                 Color.clear.frame(height: 30)
@@ -325,7 +109,6 @@ struct WaitingRoomForNotHostView: View {
                     }
                 }
             } else {
-                // 👇 fallback مهم عشان ما ينهار UI لو الروم ما وصل بعد
                 ProgressView("Loading room...")
             }
         }
@@ -339,44 +122,41 @@ struct WaitingRoomForNotHostView: View {
         }
         .navigationBarHidden(true)
         .onAppear {
-            loadData()
-            refreshTimer = Timer.scheduledTimer(withTimeInterval: 3.0, repeats: true) { _ in
-                loadData()
+            // ✅ Realtime listeners — بدل Timer كل 3 ثواني
+            participantsListener = CloudKitManager.shared.listenToParticipants(roomCode: roomCode) { updated in
+                participants = updated
+            }
+            roomListener = CloudKitManager.shared.listenToRoom(roomCode: roomCode) { data in
+                if let isStarted = data["isStarted"] as? Bool, isStarted {
+                    goToCamera = true
+                }
+                // حدّث mission للـ guest لو الهوست غيّرها
+                if let room = rooms.first(where: { $0.code == roomCode }) {
+                    room.missionTitle = data["missionTitle"] as? String
+                    room.missionDescription = data["missionDescription"] as? String
+                }
             }
         }
         .onDisappear {
-            refreshTimer?.invalidate()
-        }
-        
-        
-        .onReceive(NotificationCenter.default.publisher(for: .cloudKitDataChanged)) { _ in
-            loadData()
+            participantsListener?.remove()
+            roomListener?.remove()
         }
     }
 
-    func loadData() {
-        Task {
-            ckParticipants = await CloudKitManager.shared.fetchParticipants(roomCode: roomCode)
-            ckRoom = await CloudKitManager.shared.fetchRoom(byCode: roomCode)
-            if let ckRoom,
-               (ckRoom["CD_isStarted"] as? Int == 1 || ckRoom["CD_isStarted"] as? Int64 == 1) {
-                await MainActor.run { goToCamera = true }
-            }
-        }
-    }
-    
-    // MARK: - User Card (بدون تغيير)
     struct UserCard: View {
-
         let name: String
-        let imageData: Data?
+        let profileImageBase64: String?
+
+        var uiImage: UIImage? {
+            guard let base64 = profileImageBase64,
+                  let data = Data(base64Encoded: base64) else { return nil }
+            return UIImage(data: data)
+        }
 
         var body: some View {
             HStack(spacing: 15) {
-
-                if let imageData,
-                   let uiImage = UIImage(data: imageData) {
-                    Image(uiImage: uiImage)
+                if let img = uiImage {
+                    Image(uiImage: img)
                         .resizable()
                         .scaledToFill()
                         .frame(width: 60, height: 60)
@@ -387,13 +167,13 @@ struct WaitingRoomForNotHostView: View {
                         .frame(width: 60, height: 60)
                         .overlay {
                             Text(String(name.prefix(1)).uppercased())
+                                .font(.system(size: 20, weight: .bold))
                         }
                 }
-
                 Spacer()
-
                 Text(name)
-                    .font(.system(size: 18, weight: .bold))
+                    .font(.UbuntuBold(size: 18))
+                    .foregroundColor(.black.opacity(0.8))
             }
         }
     }

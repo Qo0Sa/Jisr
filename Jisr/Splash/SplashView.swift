@@ -26,6 +26,9 @@ struct SplashView: View {
             }
         } else {
             SplashVideoView(isFinished: $isFinished)
+                .onAppear {
+                    FirebaseManager.shared.signInAnonymously()
+                }
                 .ignoresSafeArea()
         }
     }
