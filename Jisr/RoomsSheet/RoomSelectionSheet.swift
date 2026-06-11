@@ -197,10 +197,10 @@ struct RoomSelectionSheet: View {
         }
         
         try? context.save()
+        isPresented = false  // أغلق الشيت فوراً
         
         Task {
-            print("🔥 بدأ حفظ الروم: \(newRoom.code)")
-            let result = await CloudKitManager.shared.createRoom(
+            let _ = await CloudKitManager.shared.createRoom(
                 name: newRoom.name,
                 code: newRoom.code,
                 category: newRoom.category,
@@ -209,8 +209,7 @@ struct RoomSelectionSheet: View {
                 missionTitle: newRoom.missionTitle ?? "",
                 missionDescription: newRoom.missionDescription ?? ""
             )
-            print("🔥 نتيجة createRoom: \(String(describing: result))")
-
+            
             let descriptor = FetchDescriptor<User>()
             if let currentUser = try? context.fetch(descriptor).first {
                 await CloudKitManager.shared.addParticipant(
@@ -220,8 +219,16 @@ struct RoomSelectionSheet: View {
                     isHost: true
                 )
             }
+            
+            // ✅ انتقل بعد ما addParticipant يكتمل
+            await MainActor.run {
+                onRoomCreated(newRoom)
+            }
         }
-//        // ✅ ارفع الروم في CloudKit Public عشان شخص ٢ يشوفها
+    }
+    
+    
+    //        // ✅ ارفع الروم في CloudKit Public عشان شخص ٢ يشوفها
 //        saveToCloudKit(room: newRoom)
         
 //        Task {
@@ -246,10 +253,7 @@ struct RoomSelectionSheet: View {
 //          //  CloudKitManager.shared.subscribeToParticipants(roomCode: newRoom.code)
 //        }
         
-        
-        isPresented = false
-        onRoomCreated(newRoom)
-    }
+     
     
     
 //    private func saveToCloudKit(room: Room) {

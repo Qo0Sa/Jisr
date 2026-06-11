@@ -150,19 +150,17 @@ struct MainView: View {
                     .transition(.opacity)
                 }
 
+                // ✅ الكود الجديد
                 if isShowingJoinPopup {
                     JoinWithCodeSheet(
                         isPresented: $isShowingJoinPopup,
                         onJoined: { room in
-//                            createdRoom = room
-//                            waitingDestination = .guest
-                          
-                                joinedRoom = room
+                            joinedRoom = room
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                                 waitingDestination = .guest
-                            
+                            }
                         }
                     )
-                    .transition(.opacity)
                 }
             }
             .navigationDestination(item: $waitingDestination) { destination in
