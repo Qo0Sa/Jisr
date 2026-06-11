@@ -1,13 +1,9 @@
-
-
 //
 //  RoomSelectionSheet.swift
 //  Jisr
 //
 //  Created by Wteen on 25/11/1447 AH.
 //
-
-
 
 import SwiftUI
 import SwiftData
@@ -22,7 +18,6 @@ struct RoomSelectionSheet: View {
     @State private var isOutdoor: Bool = true
     @State private var photoLimit: Int = 3
     
-    //    var onRoomCreated: () -> Void = {}
     var onRoomCreated: (Room) -> Void = { _ in }
     
     var body: some View {
@@ -54,10 +49,7 @@ struct RoomSelectionSheet: View {
                     .background(Color("fieldColor"))
                     .clipShape(RoundedRectangle(cornerRadius: 99))
                 
-                // MARK: - كروت التصنيفات المائلة المحدثة بالأيقونات المتعددة
                 HStack(spacing: -10) {
-                    
-                    // 1. كارد Cognitive (كتب، عقل، بزل)
                     CategoryCard(
                         title: "Cognitive",
                         icons: ["book.closed.fill", "brain.head.profile", "puzzlepiece.fill"],
@@ -66,7 +58,6 @@ struct RoomSelectionSheet: View {
                         degree: -12
                     ) { selectedCategory = "Cognitive" }
                     
-                    // 2. كارد Physical (شخص يجري، كرة، ورقة شجر)
                     CategoryCard(
                         title: "Physical",
                         icons: ["figure.run", "soccerball", "leaf.fill"],
@@ -77,7 +68,6 @@ struct RoomSelectionSheet: View {
                         .offset(y: -15)
                         .zIndex(selectedCategory == "Physical" ? 1 : 0)
                     
-                    // 3. كارد Creative (كاميرا، نوتة موسيقية، باليت ألوان)
                     CategoryCard(
                         title: "Creative",
                         icons: ["camera.fill", "music.note", "paintpalette.fill"],
@@ -169,10 +159,11 @@ struct RoomSelectionSheet: View {
             .padding(.horizontal, 24)
             .shadow(color: .black.opacity(0.15), radius: 20, x: 0, y: 10)
         }
-        
-        
     }
     
+    // ─────────────────────────────────────────
+    // MARK: - createRoomAction ✅ مصلحة
+    // ─────────────────────────────────────────
     private func createRoomAction() {
         let chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
         let p1 = String((0..<3).map { _ in chars.randomElement()! })
@@ -197,8 +188,11 @@ struct RoomSelectionSheet: View {
         }
         
         try? context.save()
-        isPresented = false  // أغلق الشيت فوراً
         
+        // ✅ روح فوراً للـ waiting room — Firestore يشتغل في الخلفية
+        onRoomCreated(newRoom)
+        
+        // ✅ Firestore في الخلفية — ما ننتظره
         Task {
             let _ = await CloudKitManager.shared.createRoom(
                 name: newRoom.name,
@@ -210,8 +204,8 @@ struct RoomSelectionSheet: View {
                 missionDescription: newRoom.missionDescription ?? ""
             )
             
-            let descriptor = FetchDescriptor<User>()
-            if let currentUser = try? context.fetch(descriptor).first {
+            let userDescriptor = FetchDescriptor<User>()
+            if let currentUser = try? context.fetch(userDescriptor).first {
                 await CloudKitManager.shared.addParticipant(
                     roomCode: newRoom.code,
                     userName: currentUser.name,
@@ -219,71 +213,14 @@ struct RoomSelectionSheet: View {
                     isHost: true
                 )
             }
-            
-            // ✅ انتقل بعد ما addParticipant يكتمل
-            await MainActor.run {
-                onRoomCreated(newRoom)
-            }
         }
     }
-    
-    
-    //        // ✅ ارفع الروم في CloudKit Public عشان شخص ٢ يشوفها
-//        saveToCloudKit(room: newRoom)
-        
-//        Task {
-//            //await CloudKitManager.shared.createRoom(
-//                name: newRoom.name,
-//                code: newRoom.code,
-//                category: newRoom.category,
-//                location: newRoom.location,
-//                maxPhotos: newRoom.maxPhotos,
-//                missionTitle: newRoom.missionTitle ?? "",
-//                missionDescription: newRoom.missionDescription ?? ""
-//            )
-//            let descriptor = FetchDescriptor<User>()
-//            if let currentUser = try? context.fetch(descriptor).first {
-//             //   await CloudKitManager.shared.addParticipant(
-//                    roomCode: newRoom.code,
-//                    userName: currentUser.name,
-//                    profileImage: currentUser.profileImage,
-//                    isHost: true
-//                )
-//            }
-//          //  CloudKitManager.shared.subscribeToParticipants(roomCode: newRoom.code)
-//        }
-        
-     
-    
-    
-//    private func saveToCloudKit(room: Room) {
-////        let container = CKContainer(identifier: "iCloud.com.app.jisr")
-//        let container = CKContainer.default()
-//        let publicDB = container.publicCloudDatabase
-//        
-//        let record = CKRecord(recordType: "CD_Room")
-//        record["CD_name"] = room.name
-//        record["CD_code"] = room.code
-//        record["CD_category"] = room.category
-//        record["CD_location"] = room.location
-//        record["CD_maxPhotos"] = room.maxPhotos
-//        record["CD_isStarted"] = 0
-//        record["CD_isClosed"] = 0
-//        
-//        publicDB.save(record) { _, error in
-//            if let error = error {
-//                print("❌ CloudKit error: \(error)")
-//            } else {
-//                print("✅ الروم اتحفظت: \(room.code)")
-//            }
-//        }
-//    }
 }
 
-// MARK: - الـ Component المصغر المطور لعرض عنقود الأيقونات الموزعة
+// MARK: - CategoryCard
 struct CategoryCard: View {
     let title: String
-    let icons: [String] // مصفوفة تستقبل 3 أسماء أيقونات
+    let icons: [String]
     let bgColor: Color
     let isSelected: Bool
     let degree: Double
@@ -292,27 +229,22 @@ struct CategoryCard: View {
     var body: some View {
         Button(action: action) {
             VStack(spacing: 8) {
-                
-                // 💡 الدائرة الكبيرة التي تحتوي على الأيقونات الثلاث الموزعة
                 ZStack {
                     Circle()
                         .fill(Color.white)
-                        .frame(width: 54, height: 54) // تم تكبير الدائرة قليلاً لتستوعب التوزيع براحة
+                        .frame(width: 54, height: 54)
                     
                     if icons.count >= 3 {
-                        // الأيقونة الأولى: أعلى اليسار قليلاً
                         Image(systemName: icons[0])
                             .font(.system(size: 12, weight: .bold))
                             .foregroundColor(bgColor)
                             .offset(x: -10, y: -10)
                         
-                        // الأيقونة الثانية: أعلى اليمين قليلاً
                         Image(systemName: icons[1])
                             .font(.system(size: 13, weight: .bold))
                             .foregroundColor(bgColor)
                             .offset(x: 10, y: -8)
                         
-                        // الأيقونة الثالثة: في المنتصف أسفل قليلاً (تكون الأكبر حجماً كمركز بصري)
                         Image(systemName: icons[2])
                             .font(.system(size: 16, weight: .bold))
                             .foregroundColor(bgColor)

@@ -139,17 +139,20 @@ struct MainView: View {
                     }
                 }
                 
+                // ✅ الجديد
                 if isShowingCreatePopup {
                     RoomSelectionSheet(
                         isPresented: $isShowingCreatePopup,
                         onRoomCreated: { room in
                             createdRoom = room
-                            waitingDestination = .host
+                            isShowingCreatePopup = false
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                                waitingDestination = .host
+                            }
                         }
                     )
                     .transition(.opacity)
                 }
-
                 // ✅ الكود الجديد
                 if isShowingJoinPopup {
                     JoinWithCodeSheet(
