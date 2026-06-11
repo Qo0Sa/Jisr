@@ -19,15 +19,21 @@ class UserViewModel {
     var isValid: Bool {
         !name.isEmpty
     }
-    
+  
     func loadImage() async {
         guard let item = selectedPhoto else { return }
-        if let data = try? await item.loadTransferable(type: Data.self),
-           let uiImage = UIImage(data: data) {
+        
+        // ✅ شغّل على background thread
+        guard let data = try? await item.loadTransferable(type: Data.self) else { return }
+        guard let uiImage = UIImage(data: data) else { return }
+        
+        // ✅ رجّع للـ Main Thread بس للـ UI
+        await MainActor.run {
             profileImage = Image(uiImage: uiImage)
             profileImageData = data
         }
     }
+    
     
     func fetchAndSaveiCloudID() {
         CKContainer.default().fetchUserRecordID { recordID, error in

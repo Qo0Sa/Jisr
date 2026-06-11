@@ -22,7 +22,7 @@ struct RoomHeader: View {
 //        return participants.compactMap { $0.user }
 //    }
     var cloudMembers: [User] {
-        room.participants.compactMap { $0.user }
+        room.participants?.compactMap { $0.user } ?? []
     }
 
     func getPhotosCount(for user: User) -> Int {

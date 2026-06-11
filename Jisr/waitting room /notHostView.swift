@@ -358,7 +358,8 @@ struct WaitingRoomForNotHostView: View {
         Task {
             ckParticipants = await CloudKitManager.shared.fetchParticipants(roomCode: roomCode)
             ckRoom = await CloudKitManager.shared.fetchRoom(byCode: roomCode)
-            if let ckRoom, ckRoom["CD_isStarted"] as? Int64 == 1 {
+            if let ckRoom,
+               (ckRoom["CD_isStarted"] as? Int == 1 || ckRoom["CD_isStarted"] as? Int64 == 1) {
                 await MainActor.run { goToCamera = true }
             }
         }

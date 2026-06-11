@@ -127,8 +127,8 @@ class Room {
     var isClosed: Bool = false
     var isStarted: Bool = false
     var createdBy: User? = nil
-//    var missionTitle: String = ""
-//    var missionDescription: String = ""
+    //    var missionTitle: String = ""
+    //    var missionDescription: String = ""
     
     var missionTitle: String?
     var missionDescription: String?
@@ -137,8 +137,8 @@ class Room {
     var photos: [Photo]? = []
     
     @Relationship(deleteRule: .cascade)
-//    var participants: [RoomParticipant]? = []
-    var participants: [RoomParticipant] = []
+    var participants: [RoomParticipant]? = []
+    //  var participants: [RoomParticipant] = []
     
     init(name: String, code: String, category: String, location: String, maxPhotos: Int) {
         self.name = name
@@ -150,22 +150,23 @@ class Room {
         self.isStarted = false
     }
     
-//    // ✅ كم شخص خلّص مهمته
-//    var readyCount: Int {
-//        participants?.filter { $0.isReady }.count ?? 0
-//    }
-//    
-//    // ✅ هل الكل خلّص؟
-//    var allReady: Bool {
-//        guard let participants = participants, !participants.isEmpty else { return false }
-//        return participants.allSatisfy { $0.isReady }
-//    }
+    //    // ✅ كم شخص خلّص مهمته
+    //    var readyCount: Int {
+    //        participants?.filter { $0.isReady }.count ?? 0
+    //    }
+    //
+    //    // ✅ هل الكل خلّص؟
+    //    var allReady: Bool {
+    //        guard let participants = participants, !participants.isEmpty else { return false }
+    //        return participants.allSatisfy { $0.isReady }
+    //    }
     var readyCount: Int {
-        participants.filter { $0.isReady }.count
+        participants?.filter { $0.isReady }.count ?? 0
     }
-
+    
     var allReady: Bool {
-        !participants.isEmpty && participants.allSatisfy { $0.isReady }
+        guard let p = participants, !p.isEmpty else { return false }
+        return p.allSatisfy { $0.isReady }
     }
 }
 @Model
@@ -213,3 +214,4 @@ class RoomParticipant {
         self.isReady = false
     }
 } 
+

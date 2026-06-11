@@ -167,8 +167,10 @@ struct JoinWithCodeSheet: View {
             location: roomRecord["CD_location"] as? String ?? "",
             maxPhotos: roomRecord["CD_maxPhotos"] as? Int ?? 3
         )
+        room.missionTitle = roomRecord["CD_missionTitle"] as? String
+        room.missionDescription = roomRecord["CD_missionDescription"] as? String
         context.insert(room)
-
+        
         // ٣. أضف الضيف كـ Participant في CloudKit
         let userDescriptor = FetchDescriptor<User>()
         if let currentUser = try? context.fetch(userDescriptor).first {

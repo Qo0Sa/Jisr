@@ -55,7 +55,9 @@ struct NameView: View {
                     }
                 }
                 .onChange(of: viewModel.selectedPhoto) {
-                    Task { await viewModel.loadImage() }
+                    Task {
+                        await viewModel.loadImage()
+                    }
                 }
                 
                 VStack(alignment: .leading, spacing: 8) {
@@ -84,16 +86,15 @@ struct NameView: View {
                         showError = true
                     } else {
                         showError = false
-                        viewModel.saveUser(context: context)
-                        viewModel.fetchAndSaveiCloudID()
-                        
-                        // 💡 تفعيل الدخول الثابت وحفظ البيانات وتأكيده فورياً
                         hasRegistered = true
-                        try? context.save()
-                        
+                        viewModel.saveUser(context: context)
                         goToMain = true
+                        // fetchAndSaveiCloudID تشتغل في الخلفية بدون تعليق
+                        Task.detached(priority: .background) {
+                            viewModel.fetchAndSaveiCloudID()
+                        }
                     }
-                } label: {
+                }  label: {
                     Text("Next")
                         .font(.UbuntuBold(size: 20))
                         .foregroundColor(.white)

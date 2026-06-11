@@ -46,15 +46,23 @@ struct SplashVideoView: View {
             .ignoresSafeArea()
             .onAppear {
                 player.playImmediately(atRate: 1)
-                if let duration = player.currentItem?.asset.duration {
-                    let seconds = CMTimeGetSeconds(duration)
-                    DispatchQueue.main.asyncAfter(deadline: .now() + (seconds - 0.15)) {
-                        isFinished = true
-                    }
+                NotificationCenter.default.addObserver(
+                    forName: .AVPlayerItemDidPlayToEndTime,
+                    object: player.currentItem,
+                    queue: .main
+                ) { _ in
+                    print("Video ended")
+                    isFinished = true
+                }
+                // fallback لو الفيديو ما اشتغل خلال 6 ثواني
+                DispatchQueue.main.asyncAfter(deadline: .now() + 4) {
+                    print("Fallback triggered")
+                    isFinished = true
                 }
             }
     }
 }
+
 
 // MARK: - مشغل الفيديو المخصص المصحح هندسياً بدون أخطاء
 struct CustomVideoPlayer: UIViewControllerRepresentable {
