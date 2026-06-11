@@ -3,13 +3,13 @@
 //  Jisr
 //
 //  Created by Sarah Alnasser on 08/06/2026.
-//  Replaces RoomContainer + RoomCamera
 //
 
 import SwiftUI
 import AVFoundation
 import Combine
 import SwiftData
+import FirebaseFirestore
 
 // MARK: - Camera Session Manager
 
@@ -24,7 +24,6 @@ class CameraSession: NSObject, ObservableObject {
         super.init()
         session.sessionPreset = .photo
 
-        // Start on ultra-wide (.5x) — avoids a setZoom reconfiguration on launch
         let backDevice = [
             AVCaptureDevice.DeviceType.builtInUltraWideCamera,
             .builtInWideAngleCamera
@@ -80,7 +79,6 @@ class CameraSession: NSObject, ObservableObject {
 
     func setZoom(scale: String) {
         queue.async {
-            // .5x requires the physical ultra-wide lens; 1x/2x use the wide lens
             let targetType: AVCaptureDevice.DeviceType = scale == ".5x"
                 ? .builtInUltraWideCamera
                 : .builtInWideAngleCamera
@@ -88,7 +86,6 @@ class CameraSession: NSObject, ObservableObject {
 
             guard let device = AVCaptureDevice.default(targetType, for: .video, position: .back) else { return }
 
-            // Only reconfigure session if we're actually switching lenses
             if self.currentDevice != device {
                 guard let input = try? AVCaptureDeviceInput(device: device) else { return }
                 self.session.beginConfiguration()
@@ -103,7 +100,6 @@ class CameraSession: NSObject, ObservableObject {
                 self.session.commitConfiguration()
             }
 
-            // Apply digital zoom for 2x (no-op for .5x / 1x)
             try? device.lockForConfiguration()
             device.videoZoomFactor = max(device.minAvailableVideoZoomFactor,
                                          min(zoomFactor, device.maxAvailableVideoZoomFactor))
@@ -114,7 +110,6 @@ class CameraSession: NSObject, ObservableObject {
     func switchCamera() {
         queue.async {
             self.session.beginConfiguration()
-            // Read position BEFORE removing inputs
             let current = (self.session.inputs.first as? AVCaptureDeviceInput)?.device.position ?? .back
             self.session.inputs.forEach { self.session.removeInput($0) }
             let next: AVCaptureDevice.Position = current == .back ? .front : .back
@@ -142,14 +137,12 @@ extension CameraSession: AVCapturePhotoCaptureDelegate {
         DispatchQueue.global(qos: .userInitiated).async {
             guard let data = photo.fileDataRepresentation(),
                   let image = UIImage(data: data) else { return }
-            // Store the full-frame image — PhotoBackground uses cropToViewfinder
-            // for the live preview, and onSave uses it again for the stored copy.
             DispatchQueue.main.async { self.capturedPhoto = image }
         }
     }
 }
 
-// MARK: - Main Camera View (replaces RoomContainer + RoomCamera)
+// MARK: - Main Camera View
 
 struct CameraView: View {
     let room: Room
@@ -157,9 +150,17 @@ struct CameraView: View {
 
     @StateObject private var camera = CameraSession()
     @State private var isFlashOn = false
-    @State private var zoomScale = ".5x"
+    @State private var zoomScale = "1x"
     @State private var isShowingFeed = false
     @State private var isShowingMaxPhotosPopup = false
+
+    // ✅ الصور
+    @State private var photos: [[String: Any]] = []
+    @State private var photosListener: ListenerRegistration? = nil
+
+    // ✅ المشاركين من Firestore
+    @State private var participants: [[String: Any]] = []
+    @State private var participantsListener: ListenerRegistration? = nil
 
     @Environment(\.modelContext) private var context
     @Query private var users: [User]
@@ -168,7 +169,7 @@ struct CameraView: View {
     var body: some View {
         Group {
             if isShowingFeed {
-                RoomFeed(room: room, isHost: isHost, isShowingFeed: $isShowingFeed)
+                RoomFeed(room: room, isHost: isHost, isShowingFeed: $isShowingFeed, photos: photos)
             } else if let capturedPhoto = camera.capturedPhoto {
                 PhotoPreviewView(
                     photo: capturedPhoto,
@@ -178,14 +179,13 @@ struct CameraView: View {
                         }
                     },
                     onSave: { thought, emoji in
-                        // Crop to exactly what the viewfinder showed before saving
                         let screenSize = UIScreen.main.bounds.size
                         let finalImage = cropToViewfinder(image: capturedPhoto, screenSize: screenSize)
-                        guard let imageData = finalImage.jpegData(compressionQuality: 0.8) else { return }
-                        guard let currentUser = users.first else {
-                            print("No user found")
-                            return
-                        }
+                        let resized = resizeImage(finalImage, maxSize: 800)
+                        guard let imageData = resized.jpegData(compressionQuality: 0.5) else { return }
+
+                        guard let currentUser = users.first else { return }
+
                         let newPhoto = Photo(
                             imageData: imageData,
                             thought: thought,
@@ -194,32 +194,34 @@ struct CameraView: View {
                             user: currentUser
                         )
                         context.insert(newPhoto)
-                        do {
-                            try context.save()
-                        } catch {
-                            print("Save failed: \(error)")
+                        try? context.save()
+
+                        withAnimation(.easeInOut(duration: 0.25)) {
+                            camera.capturedPhoto = nil
+                            isShowingFeed = true
                         }
-                        
-                        
+
+                        let compressedProfile: Data?
+                        if let data = currentUser.profileImage,
+                           let ui = UIImage(data: data) {
+                            let resizedProfile = resizeImage(ui, maxSize: 100)
+                            compressedProfile = resizedProfile.jpegData(compressionQuality: 0.5)
+                        } else {
+                            compressedProfile = nil
+                        }
+
+                        let roomCode = room.code
                         Task {
                             await CloudKitManager.shared.uploadPhoto(
-                                roomCode: room.code,
+                                roomCode: roomCode,
                                 imageData: imageData,
                                 thought: thought,
                                 emoji: emoji,
                                 userName: currentUser.name,
-                                profileImage: currentUser.profileImage
+                                profileImage: compressedProfile
                             )
-                            // ✅ بعد ما ترفع، روح للفيد
-                            await MainActor.run {
-                                withAnimation(.easeInOut(duration: 0.25)) {
-                                    camera.capturedPhoto = nil
-                                    isShowingFeed = true
-                                }
-                            }
                         }
                     }
-                    
                 )
             } else {
                 cameraBody
@@ -227,14 +229,35 @@ struct CameraView: View {
         }
         .navigationBarBackButtonHidden(true)
         .toolbarBackground(.hidden, for: .navigationBar)
-        // Only start the session when we're actually on the live viewfinder.
         .onAppear {
             if !isShowingFeed && camera.capturedPhoto == nil {
                 camera.start()
             }
+
+            // ✅ listener للصور
+            photosListener?.remove()
+            photosListener = Firestore.firestore()
+                .collection("photos")
+                .whereField("roomCode", isEqualTo: room.code)
+                .order(by: "uploadedAt", descending: true)
+                .addSnapshotListener { snapshot, error in
+                    guard error == nil else { return }
+                    photos = snapshot?.documents.map { $0.data() } ?? []
+                }
+
+            // ✅ listener للمشاركين
+            participantsListener?.remove()
+            participantsListener = CloudKitManager.shared.listenToParticipants(roomCode: room.code) { updated in
+                participants = updated
+            }
         }
-        .onDisappear { camera.stop() }
-        // Switching TO the feed → stop session; returning from feed → restart it.
+        .onDisappear {
+            camera.stop()
+            photosListener?.remove()
+            photosListener = nil
+            participantsListener?.remove()
+            participantsListener = nil
+        }
         .onChange(of: isShowingFeed) { _, showingFeed in
             if showingFeed {
                 camera.stop()
@@ -242,12 +265,17 @@ struct CameraView: View {
                 camera.start()
             }
         }
-        // Photo captured → stop session; photo dismissed/saved → restart it.
         .onChange(of: camera.capturedPhoto) { _, photo in
             if photo != nil {
                 camera.stop()
             } else if !isShowingFeed {
                 camera.start()
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("DismissRoomFlow"))) { _ in
+            dismiss()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                NotificationCenter.default.post(name: NSNotification.Name("DismissRoomFlow"), object: nil)
             }
         }
     }
@@ -262,38 +290,34 @@ struct CameraView: View {
                                         width: viewfinderWidth, height: viewfinderWidth)
 
             ZStack {
-                // Full-screen blurred camera feed with clear viewfinder hole
                 BlurredCameraView(session: camera.session, viewfinderRect: viewfinderRect)
                     .ignoresSafeArea()
 
                 VStack(spacing: 0) {
-                    // Header with real room members data
                     RoomHeader(
                         room: room,
-                        currentProgress: room.photos?.count ?? 0,
+                        currentProgress: photos.count,
                         maxPhotos: room.maxPhotos,
                         isShowingFeed: isShowingFeed,
+                        participants: participants,
                         onGalleryToggle: {
                             withAnimation(.easeInOut(duration: 0.25)) { isShowingFeed = true }
                         },
-                        onBack: { dismiss() }
+                        onBack: {
+                            NotificationCenter.default.post(
+                                name: NSNotification.Name("DismissRoomFlow"),
+                                object: nil
+                            )
+                        }
                     )
                     .padding(.top, 62)
 
-                    // Prompt card with real room mission
                     VStack(alignment: .leading, spacing: 6) {
-//                        Text(room.missionTitle.isEmpty ? "Today's Mission" : room.missionTitle)
-                        Text((room.missionTitle ?? "").isEmpty
-                             ? "Today's Mission"
-                             : room.missionTitle ?? "")
-                        
+                        Text((room.missionTitle ?? "").isEmpty ? "Today's Mission" : room.missionTitle ?? "")
                             .font(.system(size: 18, weight: .bold))
                             .foregroundColor(Color("buttonColor"))
 
-//                        Text(room.missionDescription.isEmpty ? "Start capturing moments." : room.missionDescription)
-                        Text((room.missionDescription ?? "").isEmpty
-                             ? "Start capturing moments."
-                             : room.missionDescription ?? "")
+                        Text((room.missionDescription ?? "").isEmpty ? "Start capturing moments." : room.missionDescription ?? "")
                             .font(.system(size: 14))
                             .foregroundColor(Color("buttonColor").opacity(0.6))
                             .lineSpacing(1)
@@ -314,7 +338,6 @@ struct CameraView: View {
 
                     Spacer()
 
-                    // Bottom controls
                     VStack(spacing: 24) {
                         HStack(spacing: 40) {
                             Button(action: {
@@ -385,7 +408,6 @@ struct CameraView: View {
                     }
                 }
 
-                // Max photos popup
                 if isShowingMaxPhotosPopup {
                     MaxPhotosPopup(
                         isPresented: $isShowingMaxPhotosPopup,
@@ -399,18 +421,24 @@ struct CameraView: View {
     }
 }
 
+// MARK: - Resize Helper
+func resizeImage(_ image: UIImage, maxSize: CGFloat) -> UIImage {
+    let size = image.size
+    let ratio = min(maxSize / size.width, maxSize / size.height)
+    guard ratio < 1 else { return image }
+    let newSize = CGSize(width: size.width * ratio, height: size.height * ratio)
+    let renderer = UIGraphicsImageRenderer(size: newSize)
+    return renderer.image { _ in
+        image.draw(in: CGRect(origin: .zero, size: newSize))
+    }
+}
+
 // MARK: - Preview
 
 #Preview {
     let config = ModelConfiguration(isStoredInMemoryOnly: true)
     let container = try! ModelContainer(for: Room.self, User.self, Photo.self, configurations: config)
-    let sampleRoom = Room(
-        name: "Mission District Mural Hunt",
-        code: "JSR-777",
-        category: "Creative",
-        location: "Outdoor",
-        maxPhotos: 9
-    )
+    let sampleRoom = Room(name: "Mission District Mural Hunt", code: "JSR-777", category: "Creative", location: "Outdoor", maxPhotos: 9)
     let sampleUser = User(name: "Sara")
     container.mainContext.insert(sampleRoom)
     container.mainContext.insert(sampleUser)

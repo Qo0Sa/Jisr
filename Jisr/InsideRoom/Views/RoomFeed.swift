@@ -13,11 +13,10 @@ struct RoomFeed: View {
     let room: Room
     let isHost: Bool
     @Binding var isShowingFeed: Bool
+    let photos: [[String: Any]]   // ✅ يجي من CameraView
 
     @State private var isShowingEndPopup = false
     @State private var isRoomFinished = false
-    @State private var photos: [[String: Any]] = []
-    @State private var photosListener: ListenerRegistration? = nil
 
     let columns = [
         GridItem(.flexible(), spacing: 14),
@@ -120,19 +119,6 @@ struct RoomFeed: View {
         .navigationDestination(isPresented: $isRoomFinished) {
             RoomSummary(room: room)
         }
-        .onAppear {
-            // ✅ Realtime listener بدل Timer
-            photosListener = Firestore.firestore()
-                .collection("photos")
-                .whereField("roomCode", isEqualTo: room.code)
-                .order(by: "uploadedAt", descending: true)
-                .addSnapshotListener { snapshot, _ in
-                    photos = snapshot?.documents.map { $0.data() } ?? []
-                }
-        }
-        .onDisappear {
-            photosListener?.remove()
-        }
     }
 }
 
@@ -141,6 +127,6 @@ struct RoomFeed: View {
     let container = try! ModelContainer(for: Room.self, User.self, Photo.self, configurations: config)
     let sampleRoom = Room(name: "Mission District Mural Hunt", code: "JSR-659", category: "Creative", location: "Outdoor", maxPhotos: 9)
     container.mainContext.insert(sampleRoom)
-    return RoomFeed(room: sampleRoom, isHost: true, isShowingFeed: .constant(true))
+    return RoomFeed(room: sampleRoom, isHost: true, isShowingFeed: .constant(true), photos: [])
         .modelContainer(container)
 }

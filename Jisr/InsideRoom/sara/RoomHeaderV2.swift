@@ -11,28 +11,16 @@ struct RoomHeader: View {
     let currentProgress: Int
     let maxPhotos: Int
     let isShowingFeed: Bool
+    var participants: [[String: Any]] = []   // ✅ من Firestore
     var onGalleryToggle: (() -> Void)? = nil
     var onBack: (() -> Void)? = nil
 
     @State private var isExpanded = false
     private let warmGray = Color(red: 0.55, green: 0.53, blue: 0.50)
 
-//    var cloudMembers: [User] {
-//        guard let participants = room.participants else { return [] }
-//        return participants.compactMap { $0.user }
-//    }
-    var cloudMembers: [User] {
-        room.participants?.compactMap { $0.user } ?? []
-    }
-
-    func getPhotosCount(for user: User) -> Int {
-        let allPhotos = room.photos ?? []
-        return allPhotos.filter { $0.user?.id == user.id }.count
-    }
-
     var body: some View {
         ZStack(alignment: .top) {
-            // Left: back button — Right: counter capsule (hidden when expanded)
+
             HStack(alignment: .top, spacing: 0) {
                 Button(action: { onBack?() }) {
                     Image(systemName: "chevron.left")
@@ -73,7 +61,7 @@ struct RoomHeader: View {
                 }
             }
 
-            // Center: members capsule — tap to expand/collapse
+            // ✅ الأعضاء من Firestore
             Button(action: {
                 withAnimation(.spring(response: 0.4, dampingFraction: 0.75)) {
                     isExpanded.toggle()
@@ -81,36 +69,38 @@ struct RoomHeader: View {
             }) {
                 if !isExpanded {
                     HStack(spacing: -12) {
-                        if cloudMembers.isEmpty {
+                        if participants.isEmpty {
                             Image(systemName: "person.circle.fill")
                                 .resizable()
                                 .frame(width: 36, height: 36)
                                 .foregroundColor(.white.opacity(0.6))
                         } else {
-                            ForEach(0..<min(cloudMembers.count, 3), id: \.self) { index in
-                                let user = cloudMembers[index]
+                            ForEach(0..<min(participants.count, 3), id: \.self) { index in
+                                let participant = participants[index]
                                 Circle()
                                     .fill(Color.white.opacity(0.2))
                                     .frame(width: 36, height: 36)
                                     .overlay(Circle().stroke(Color.white, lineWidth: 1.5))
                                     .overlay(
                                         Group {
-                                            if let imageData = user.profileImage,
-                                               let uiImage = UIImage(data: imageData) {
+                                            if let base64 = participant["profileImageBase64"] as? String,
+                                               let data = Data(base64Encoded: base64),
+                                               let uiImage = UIImage(data: data) {
                                                 Image(uiImage: uiImage)
                                                     .resizable()
                                                     .scaledToFill()
                                                     .clipShape(Circle())
                                             } else {
-                                                Text(String(user.name.prefix(1)).uppercased())
+                                                let name = participant["userName"] as? String ?? "?"
+                                                Text(String(name.prefix(1)).uppercased())
                                                     .font(.system(size: 14, weight: .bold))
                                                     .foregroundColor(.white)
                                             }
                                         }
                                     )
                             }
-                            if cloudMembers.count > 3 {
-                                Text("+\(cloudMembers.count - 3)")
+                            if participants.count > 3 {
+                                Text("+\(participants.count - 3)")
                                     .font(.system(size: 14, weight: .medium))
                                     .foregroundColor(.white.opacity(0.9))
                                     .padding(.leading, 14)
@@ -124,7 +114,8 @@ struct RoomHeader: View {
                     .clipShape(Capsule())
                 } else {
                     HStack(spacing: 16) {
-                        ForEach(cloudMembers) { user in
+                        ForEach(Array(participants.enumerated()), id: \.offset) { _, participant in
+                            let name = participant["userName"] as? String ?? "?"
                             VStack(spacing: 6) {
                                 Circle()
                                     .fill(Color.white.opacity(0.2))
@@ -132,21 +123,22 @@ struct RoomHeader: View {
                                     .overlay(Circle().stroke(Color.white, lineWidth: 1.5))
                                     .overlay(
                                         Group {
-                                            if let imageData = user.profileImage,
-                                               let uiImage = UIImage(data: imageData) {
+                                            if let base64 = participant["profileImageBase64"] as? String,
+                                               let data = Data(base64Encoded: base64),
+                                               let uiImage = UIImage(data: data) {
                                                 Image(uiImage: uiImage)
                                                     .resizable()
                                                     .scaledToFill()
                                                     .clipShape(Circle())
                                             } else {
-                                                Text(String(user.name.prefix(1)).uppercased())
+                                                Text(String(name.prefix(1)).uppercased())
                                                     .font(.system(size: 16, weight: .bold))
                                                     .foregroundColor(.white)
                                             }
                                         }
                                     )
-                                Text("\(getPhotosCount(for: user))/\(room.maxPhotos)")
-                                    .font(.system(size: 14, weight: .medium))
+                                Text(name)
+                                    .font(.system(size: 12, weight: .medium))
                                     .foregroundColor(.white)
                             }
                         }
