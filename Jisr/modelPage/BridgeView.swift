@@ -49,7 +49,7 @@ struct ModelPage: View {
 
                 // Progress Text
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("you have built using \(state.layerCount) \rrooms")
+                    Text("You have built using \(state.layerCount) \rrooms")
                         .font(.custom("Ubuntu-Bold", size: 18))
                         .foregroundColor(Color("buttonColor"))
 

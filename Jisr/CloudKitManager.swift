@@ -58,19 +58,14 @@ class CloudKitManager {
         }
     }
 
-    func updateRoom(roomCode: String, isStarted: Bool? = nil, isClosed: Bool? = nil) async {
+    func updateRoom(roomCode: String, isStarted: Bool? = nil, isClosed: Bool? = nil,
+                    missionTitle: String? = nil, missionDescription: String? = nil) async {
         var updates: [String: Any] = [:]
-        if let isStarted { updates["isStarted"] = isStarted }
-        if let isClosed  { updates["isClosed"]  = isClosed  }
-        guard !updates.isEmpty else { return }
-        do {
-            try await db.collection("rooms").document(roomCode).updateData(updates)
-            print("✅ Room updated")
-        } catch {
-            print("❌ updateRoom: \(error)")
-        }
+        if let isStarted          { updates["isStarted"]           = isStarted          }
+        if let isClosed           { updates["isClosed"]            = isClosed           }
+        if let missionTitle       { updates["missionTitle"]        = missionTitle       }
+        if let missionDescription { updates["missionDescription"]  = missionDescription }
     }
-
     // ─────────────────────────────────────────
     // MARK: - Participants
     // ─────────────────────────────────────────

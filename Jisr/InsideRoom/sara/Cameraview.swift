@@ -296,8 +296,10 @@ struct CameraView: View {
                 VStack(spacing: 0) {
                     RoomHeader(
                         room: room,
-                        currentProgress: photos.count,
-                        maxPhotos: room.maxPhotos,
+                        // ✅ الجديد — عدد صور اليوزر الحالي بس
+                        currentProgress: photos.filter {
+                            ($0["userID"] as? String) == CloudKitManager.shared.currentUserID
+                        }.count,                        maxPhotos: room.maxPhotos,
                         isShowingFeed: isShowingFeed,
                         participants: participants,
                         onGalleryToggle: {
@@ -382,8 +384,11 @@ struct CameraView: View {
                         }
 
                         Button(action: {
-                            let currentCount = room.photos?.count ?? 0
-                            guard currentCount < room.maxPhotos else {
+                            // ✅ الجديد
+                            let currentCount = photos.filter {
+                                ($0["userID"] as? String) == CloudKitManager.shared.currentUserID
+                            }.count
+                            guard currentCount < room.maxPhotos else  {
                                 withAnimation(.easeInOut(duration: 0.2)) {
                                     isShowingMaxPhotosPopup = true
                                 }

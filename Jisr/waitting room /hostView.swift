@@ -226,6 +226,13 @@ struct WaitingRoomView: View {
                 room.missionTitle = title
                 room.missionDescription = description
                 try? context.save()
+                Task {
+                    await CloudKitManager.shared.updateRoom(
+                        roomCode: room.code,
+                        missionTitle: title,
+                        missionDescription: description
+                    )
+                }
             } else {
                 missionTitle = "Mission"
                 missionDescription = chosenPrompt
