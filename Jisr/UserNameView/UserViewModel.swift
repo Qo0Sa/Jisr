@@ -32,7 +32,9 @@ class UserViewModel {
         Auth.auth().signInAnonymously { result, error in
             if let error { print("❌ Firebase Auth: \(error.localizedDescription)"); return }
             if let uid = result?.user.uid {
-                UserDefaults.standard.set(uid, forKey: "iCloudUserID")
+                if UserDefaults.standard.string(forKey: "iCloudUserID")?.isEmpty ?? true {
+                    UserDefaults.standard.set(uid, forKey: "iCloudUserID")
+                }
                 print("✅ Firebase UID: \(uid)")
             }
         }

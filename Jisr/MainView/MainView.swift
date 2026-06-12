@@ -7,6 +7,7 @@
 
 import SwiftUI
 import SwiftData
+import FirebaseFirestore
 
 enum WaitingDestination: Hashable {
     case host
@@ -442,23 +443,7 @@ struct RoomCardView: View {
                         
                         // ← اسم الروم + صورة الهوست في الزاوية العلوية اليسرى
                         HStack(spacing: 8) {
-                            // صورة الهوست
-                            if let imageData = room.createdBy?.profileImage,
-                               let uiImage = UIImage(data: imageData) {
-                                Image(uiImage: uiImage)
-                                    .resizable()
-                                    .scaledToFill()
-                                    .frame(width: 38, height: 38)
-                                    .clipShape(Circle())
-                            } else {
-                                Circle()
-                                    .fill(Color.white.opacity(0.4))
-                                    .frame(width: 38, height: 38)
-                                    .overlay {
-                                        Image(systemName: "person.fill")
-                                            .foregroundColor(.white.opacity(0.8))
-                                    }
-                            }
+                            RoomHostAvatar(room: room)
                             
                             // اسم الروم
                             Text(room.name)
@@ -509,6 +494,61 @@ struct RoomCardView: View {
     }
 }
 
+struct RoomHostAvatar: View {
+    let room: Room
+
+    @State private var hostImageData: Data?
+    @State private var hostInitial: String = ""
+    @State private var listener: ListenerRegistration?
+
+    var body: some View {
+        Group {
+            if let imageData = room.createdBy?.profileImage ?? hostImageData,
+               let uiImage = UIImage(data: imageData) {
+                Image(uiImage: uiImage)
+                    .resizable()
+                    .scaledToFill()
+            } else if !hostInitial.isEmpty {
+                Text(hostInitial)
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundColor(.white.opacity(0.9))
+            } else {
+                Image(systemName: "person.fill")
+                    .foregroundColor(.white.opacity(0.8))
+            }
+        }
+        .frame(width: 38, height: 38)
+        .background(Color.white.opacity(0.4))
+        .clipShape(Circle())
+        .onAppear {
+            guard room.createdBy?.profileImage == nil else { return }
+            listener?.remove()
+            listener = Firestore.firestore()
+                .collection("participants")
+                .whereField("roomCode", isEqualTo: room.code)
+                .whereField("isHost", isEqualTo: true)
+                .addSnapshotListener { snapshot, error in
+                    if let error {
+                        print("❌ host avatar listener: \(error)")
+                        return
+                    }
+
+                    guard let data = snapshot?.documents.first?.data() else { return }
+                    if let base64 = data["profileImageBase64"] as? String {
+                        hostImageData = Data(base64Encoded: base64)
+                    }
+                    if let name = data["userName"] as? String {
+                        hostInitial = String(name.prefix(1)).uppercased()
+                    }
+                }
+        }
+        .onDisappear {
+            listener?.remove()
+            listener = nil
+        }
+    }
+}
+
     
 // MARK: - صورة البروفايل الأصلية
 struct ProfileAvatarView: View {
@@ -549,5 +589,4 @@ struct ProfileAvatarView: View {
     
     
 }
-
 

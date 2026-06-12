@@ -153,6 +153,7 @@ struct CameraView: View {
     @State private var zoomScale = "1x"
     @State private var isShowingFeed = false
     @State private var isShowingMaxPhotosPopup = false
+    @State private var isSavingPhoto = false
 
     // ✅ الصور
     @State private var photos: [[String: Any]] = []
@@ -161,6 +162,8 @@ struct CameraView: View {
     // ✅ المشاركين من Firestore
     @State private var participants: [[String: Any]] = []
     @State private var participantsListener: ListenerRegistration? = nil
+    @State private var roomListener: ListenerRegistration? = nil
+    @State private var isRoomFinished = false
 
     @Environment(\.modelContext) private var context
     @Query private var users: [User]
@@ -174,54 +177,71 @@ struct CameraView: View {
                 PhotoPreviewView(
                     photo: capturedPhoto,
                     onDismiss: {
+                        guard !isSavingPhoto else { return }
                         withAnimation(.easeInOut(duration: 0.2)) {
                             camera.capturedPhoto = nil
                         }
                     },
                     onSave: { thought, emoji in
-                        let screenSize = UIScreen.main.bounds.size
-                        let finalImage = cropToViewfinder(image: capturedPhoto, screenSize: screenSize)
-                        let resized = resizeImage(finalImage, maxSize: 800)
-                        guard let imageData = resized.jpegData(compressionQuality: 0.5) else { return }
-
+                        guard !isSavingPhoto else { return }
                         guard let currentUser = users.first else { return }
 
-                        let newPhoto = Photo(
-                            imageData: imageData,
-                            thought: thought,
-                            emoji: emoji,
-                            room: room,
-                            user: currentUser
-                        )
-                        context.insert(newPhoto)
-                        try? context.save()
-
-                        withAnimation(.easeInOut(duration: 0.25)) {
-                            camera.capturedPhoto = nil
-                            isShowingFeed = true
-                        }
-
-                        let compressedProfile: Data?
-                        if let data = currentUser.profileImage,
-                           let ui = UIImage(data: data) {
-                            let resizedProfile = resizeImage(ui, maxSize: 100)
-                            compressedProfile = resizedProfile.jpegData(compressionQuality: 0.5)
-                        } else {
-                            compressedProfile = nil
-                        }
-
+                        isSavingPhoto = true
+                        let screenSize = UIScreen.main.bounds.size
+                        let profileImageData = currentUser.profileImage
+                        let userName = currentUser.name
                         let roomCode = room.code
-                        Task {
-                            await CloudKitManager.shared.uploadPhoto(
-                                roomCode: roomCode,
-                                imageData: imageData,
-                                thought: thought,
-                                emoji: emoji,
-                                userName: currentUser.name,
-                                profileImage: compressedProfile
-                            )
+
+                        DispatchQueue.global(qos: .userInitiated).async {
+                            let finalImage = cropToViewfinder(image: capturedPhoto, screenSize: screenSize)
+                            let resized = resizeImage(finalImage, maxSize: 800)
+                            let imageData = resized.jpegData(compressionQuality: 0.5)
+
+                            let compressedProfile: Data?
+                            if let profileImageData,
+                               let ui = UIImage(data: profileImageData) {
+                                let resizedProfile = resizeImage(ui, maxSize: 100)
+                                compressedProfile = resizedProfile.jpegData(compressionQuality: 0.5)
+                            } else {
+                                compressedProfile = nil
+                            }
+
+                            DispatchQueue.main.async {
+                                guard let imageData else {
+                                    isSavingPhoto = false
+                                    return
+                                }
+
+                                let newPhoto = Photo(
+                                    imageData: imageData,
+                                    thought: thought,
+                                    emoji: emoji,
+                                    room: room,
+                                    user: currentUser
+                                )
+                                context.insert(newPhoto)
+                                try? context.save()
+
+                                withAnimation(.easeInOut(duration: 0.25)) {
+                                    camera.capturedPhoto = nil
+                                    isShowingFeed = true
+                                }
+                                isSavingPhoto = false
+
+                                Task {
+                                    await CloudKitManager.shared.uploadPhoto(
+                                        roomCode: roomCode,
+                                        imageData: imageData,
+                                        thought: thought,
+                                        emoji: emoji,
+                                        userName: userName,
+                                        profileImage: compressedProfile
+                                    )
+                                }
+                            }
                         }
-                    }
+                    },
+                    isSaving: isSavingPhoto
                 )
             } else {
                 cameraBody
@@ -229,6 +249,9 @@ struct CameraView: View {
         }
         .navigationBarBackButtonHidden(true)
         .toolbarBackground(.hidden, for: .navigationBar)
+        .navigationDestination(isPresented: $isRoomFinished) {
+            RoomSummary(room: room)
+        }
         .onAppear {
             if !isShowingFeed && camera.capturedPhoto == nil {
                 camera.start()
@@ -239,16 +262,35 @@ struct CameraView: View {
             photosListener = Firestore.firestore()
                 .collection("photos")
                 .whereField("roomCode", isEqualTo: room.code)
-                .order(by: "uploadedAt", descending: true)
                 .addSnapshotListener { snapshot, error in
-                    guard error == nil else { return }
-                    photos = snapshot?.documents.map { $0.data() } ?? []
+                    if let error {
+                        print("❌ photos listener: \(error)")
+                        return
+                    }
+                    photos = (snapshot?.documents.map { $0.data() } ?? [])
+                        .sorted {
+                            let lhs = ($0["uploadedAt"] as? Timestamp)?.dateValue() ?? .distantPast
+                            let rhs = ($1["uploadedAt"] as? Timestamp)?.dateValue() ?? .distantPast
+                            return lhs > rhs
+                        }
                 }
 
             // ✅ listener للمشاركين
             participantsListener?.remove()
             participantsListener = CloudKitManager.shared.listenToParticipants(roomCode: room.code) { updated in
                 participants = updated
+            }
+
+            if !isHost {
+                roomListener?.remove()
+                roomListener = CloudKitManager.shared.listenToRoom(roomCode: room.code) { data in
+                    guard (data["isClosed"] as? Bool) == true else { return }
+                    room.isClosed = true
+                    try? context.save()
+                    camera.capturedPhoto = nil
+                    isShowingFeed = false
+                    isRoomFinished = true
+                }
             }
         }
         .onDisappear {
@@ -257,6 +299,8 @@ struct CameraView: View {
             photosListener = nil
             participantsListener?.remove()
             participantsListener = nil
+            roomListener?.remove()
+            roomListener = nil
         }
         .onChange(of: isShowingFeed) { _, showingFeed in
             if showingFeed {

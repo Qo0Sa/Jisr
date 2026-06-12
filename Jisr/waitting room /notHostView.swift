@@ -121,8 +121,13 @@ struct WaitingRoomForNotHostView: View {
         }
         .navigationBarHidden(true)
         .onAppear {
-            print("👂 بدأ listener للروم: \(roomCode)")
-            
+            let descriptor = FetchDescriptor<Room>()
+            if let savedRooms = try? context.fetch(descriptor),
+               let existingRoom = savedRooms.first(where: { $0.code == roomCode }) {
+                localRoom = existingRoom
+            }
+
+            // ✅ Listener للمشاركين
             participantsListener = CloudKitManager.shared.listenToParticipants(roomCode: roomCode) { updated in
                 participants = updated
             }
@@ -142,9 +147,18 @@ struct WaitingRoomForNotHostView: View {
                 if !title.isEmpty { missionTitle = title }
                 if !desc.isEmpty  { missionDescription = desc }
 
+                // ✅ لو الهوست ضغط Start
                 if let isStarted = data["isStarted"] as? Bool, isStarted {
-                    print("🚀 الهوست ضغط Start!")
-                    if localRoom == nil {
+
+                    if let existingRoom = localRoom {
+                        existingRoom.name = roomName
+                        existingRoom.category = roomCategory
+                        existingRoom.location = roomLocation
+                        existingRoom.maxPhotos = roomMaxPhotos
+                        existingRoom.missionTitle = missionTitle
+                        existingRoom.missionDescription = missionDescription
+                        existingRoom.isStarted = true
+                    } else {
                         let newRoom = Room(
                             name: roomName,
                             code: roomCode,
@@ -159,8 +173,9 @@ struct WaitingRoomForNotHostView: View {
                         try? context.save()
                         localRoom = newRoom
                     }
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                        print("📲 goToCamera = true")
+                    try? context.save()
+
+                    DispatchQueue.main.asyncAfter(deadline: .now()) {
                         goToCamera = true
                     }
                 }

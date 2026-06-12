@@ -15,7 +15,64 @@ class CloudKitManager {
     private let db = Firestore.firestore()
 
     var currentUserID: String {
-        Auth.auth().currentUser?.uid ?? UserDefaults.standard.string(forKey: "iCloudUserID") ?? ""
+        let defaults = UserDefaults.standard
+
+        if let firebaseID = Auth.auth().currentUser?.uid, !firebaseID.isEmpty {
+            defaults.set(firebaseID, forKey: "iCloudUserID")
+            return firebaseID
+        }
+
+        if let savedID = defaults.string(forKey: "iCloudUserID"), !savedID.isEmpty {
+            return savedID
+        }
+
+        let fallbackID = "local-\(UUID().uuidString)"
+        defaults.set(fallbackID, forKey: "iCloudUserID")
+        return fallbackID
+    }
+
+    private func authenticatedUserID() async -> String {
+        let defaults = UserDefaults.standard
+
+        if let firebaseID = Auth.auth().currentUser?.uid, !firebaseID.isEmpty {
+            defaults.set(firebaseID, forKey: "iCloudUserID")
+            return firebaseID
+        }
+
+        do {
+            let result: AuthDataResult = try await withCheckedThrowingContinuation { continuation in
+                Auth.auth().signInAnonymously { result, error in
+                    if let error {
+                        continuation.resume(throwing: error)
+                    } else if let result {
+                        continuation.resume(returning: result)
+                    } else {
+                        continuation.resume(throwing: NSError(domain: "FirebaseAuth", code: -1, userInfo: nil))
+                    }
+                }
+            }
+            let uid = result.user.uid
+            defaults.set(uid, forKey: "iCloudUserID")
+            return uid
+        } catch {
+            print("❌ Firebase Auth: \(error.localizedDescription)")
+            return currentUserID
+        }
+    }
+
+    private func sortedParticipants(_ participants: [[String: Any]]) -> [[String: Any]] {
+        participants.sorted { first, second in
+            let firstIsHost = first["isHost"] as? Bool ?? false
+            let secondIsHost = second["isHost"] as? Bool ?? false
+
+            if firstIsHost != secondIsHost {
+                return firstIsHost
+            }
+
+            let firstJoined = (first["joinedAt"] as? Timestamp)?.dateValue() ?? .distantPast
+            let secondJoined = (second["joinedAt"] as? Timestamp)?.dateValue() ?? .distantPast
+            return firstJoined < secondJoined
+        }
     }
 
     // ─────────────────────────────────────────
@@ -25,6 +82,7 @@ class CloudKitManager {
     func createRoom(name: String, code: String, category: String,
                     location: String, maxPhotos: Int,
                     missionTitle: String, missionDescription: String) async -> [String: Any]? {
+        let userID = await authenticatedUserID()
         let data: [String: Any] = [
             "name": name,
             "code": code,
@@ -35,7 +93,7 @@ class CloudKitManager {
             "isClosed": false,
             "missionTitle": missionTitle,
             "missionDescription": missionDescription,
-            "hostUserID": currentUserID,
+            "hostUserID": userID,
             "createdAt": Timestamp()
         ]
         do {
@@ -58,13 +116,24 @@ class CloudKitManager {
         }
     }
 
+    @discardableResult
     func updateRoom(roomCode: String, isStarted: Bool? = nil, isClosed: Bool? = nil,
-                    missionTitle: String? = nil, missionDescription: String? = nil) async {
+                    missionTitle: String? = nil, missionDescription: String? = nil) async -> Bool {
         var updates: [String: Any] = [:]
         if let isStarted          { updates["isStarted"]           = isStarted          }
         if let isClosed           { updates["isClosed"]            = isClosed           }
         if let missionTitle       { updates["missionTitle"]        = missionTitle       }
         if let missionDescription { updates["missionDescription"]  = missionDescription }
+        guard !updates.isEmpty else { return true }
+        do {
+            try await db.collection("rooms")
+                .document(roomCode)
+                .updateData(updates)
+            return true
+        } catch {
+            print("❌ updateRoom: \(error)")
+            return false
+        }
     }
     // ─────────────────────────────────────────
     // MARK: - Participants
@@ -72,9 +141,10 @@ class CloudKitManager {
 
     func addParticipant(roomCode: String, userName: String,
                         profileImage: Data?, isHost: Bool) async {
+        let userID = await authenticatedUserID()
         var data: [String: Any] = [
             "roomCode": roomCode,
-            "userID": currentUserID,
+            "userID": userID,
             "userName": userName,
             "isHost": isHost,
             "isReady": false,
@@ -84,7 +154,7 @@ class CloudKitManager {
             data["profileImageBase64"] = imageData.base64EncodedString()
         }
         do {
-            let docID = "\(roomCode)_\(currentUserID)"
+            let docID = "\(roomCode)_\(userID)"
             try await db.collection("participants").document(docID).setData(data)
             print("✅ Participant added: \(userName)")
         } catch {
@@ -97,7 +167,7 @@ class CloudKitManager {
             let snapshot = try await db.collection("participants")
                 .whereField("roomCode", isEqualTo: roomCode)
                 .getDocuments()
-            return snapshot.documents.map { $0.data() }
+            return sortedParticipants(snapshot.documents.map { $0.data() })
         } catch {
             print("❌ fetchParticipants: \(error)")
             return []
@@ -110,9 +180,10 @@ class CloudKitManager {
 
     func uploadPhoto(roomCode: String, imageData: Data, thought: String,
                      emoji: String, userName: String, profileImage: Data?) async {
+        let userID = await authenticatedUserID()
         var data: [String: Any] = [
             "roomCode": roomCode,
-            "userID": currentUserID,
+            "userID": userID,
             "userName": userName,
             "imageBase64": imageData.base64EncodedString(),
             "thought": thought,
@@ -168,7 +239,7 @@ class CloudKitManager {
                     print("❌ listenToParticipants: \(error)")
                     return
                 }
-                let participants = snapshot?.documents.map { $0.data() } ?? []
+                let participants = self.sortedParticipants(snapshot?.documents.map { $0.data() } ?? [])
                 DispatchQueue.main.async { onChange(participants) }
             }
     }

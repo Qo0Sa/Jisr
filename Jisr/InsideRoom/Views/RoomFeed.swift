@@ -17,6 +17,7 @@ struct RoomFeed: View {
 
     @State private var isShowingEndPopup = false
     @State private var isRoomFinished = false
+    @State private var isEndingRoom = false
 
     let columns = [
         GridItem(.flexible(), spacing: 14),
@@ -84,16 +85,25 @@ struct RoomFeed: View {
                 VStack {
                     Spacer()
                     Button(action: {
+                        guard !isEndingRoom else { return }
                         withAnimation(.easeInOut(duration: 0.2)) { isShowingEndPopup = true }
                     }) {
-                        Text("End Room")
-                            .font(.UbuntuBold(size: 20))
-                            .foregroundColor(.white)
-                            .frame(width: 200, height: 58)
-                            .background(Color(red: 0.18, green: 0.18, blue: 0.18))
-                            .clipShape(RoundedRectangle(cornerRadius: 99))
-                            .shadow(color: .black.opacity(0.08), radius: 10, x: 0, y: 6)
+                        Group {
+                            if isEndingRoom {
+                                ProgressView()
+                                    .tint(.white)
+                            } else {
+                                Text("End Room")
+                                    .font(.UbuntuBold(size: 20))
+                                    .foregroundColor(.white)
+                            }
+                        }
+                        .frame(width: 200, height: 58)
+                        .background(Color(red: 0.18, green: 0.18, blue: 0.18))
+                        .clipShape(RoundedRectangle(cornerRadius: 99))
+                        .shadow(color: .black.opacity(0.08), radius: 10, x: 0, y: 6)
                     }
+                    .disabled(isEndingRoom)
                     .frame(maxWidth: .infinity)
                     .padding(.bottom, 16)
                 }
@@ -103,12 +113,18 @@ struct RoomFeed: View {
                 EndRoomPopup(
                     isPresented: $isShowingEndPopup,
                     onConfirmEnd: {
+                        guard !isEndingRoom else { return }
+                        isEndingRoom = true
                         Task {
-                            await CloudKitManager.shared.updateRoom(roomCode: room.code, isClosed: true)
+                            let didClose = await CloudKitManager.shared.updateRoom(roomCode: room.code, isClosed: true)
+                            await MainActor.run {
+                                isEndingRoom = false
+                                guard didClose else { return }
+                                room.isClosed = true
+                                try? context.save()
+                                isRoomFinished = true
+                            }
                         }
-                        room.isClosed = true
-                        try? context.save()
-                        isRoomFinished = true
                     }
                 )
                 .transition(.opacity)

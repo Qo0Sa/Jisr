@@ -37,6 +37,7 @@ struct WaitingRoomView: View {
     }
 
     @State private var goToCamera = false
+    @State private var isStartingRoom = false
     @State private var participants: [[String: Any]] = []
     @State private var roomListener: ListenerRegistration? = nil
     @State private var participantsListener: ListenerRegistration? = nil
@@ -167,6 +168,8 @@ struct WaitingRoomView: View {
                         .clipped()
 
                     Button(action: {
+                        guard !isStartingRoom else { return }
+                        isStartingRoom = true
                         room.isStarted = true
                         room.missionTitle = missionTitle
                         room.missionDescription = missionDescription
@@ -179,18 +182,32 @@ struct WaitingRoomView: View {
                                 missionTitle: missionTitle,
                                 missionDescription: missionDescription
                             )
+                            await MainActor.run {
+                                isStartingRoom = false
+                                if didStart {
+                                    goToCamera = true
+                                }
+                            }
                         }
                         
                         goToCamera = true
                     }) {
-                        Text("Start")
-                            .font(.UbuntuBold(size: 24))
-                            .foregroundColor(.white)
-                            .frame(width: 220, height: 65)
-                            .background(Color(red: 0.15, green: 0.15, blue: 0.15))
-                            .cornerRadius(35)
-                            .shadow(color: .black.opacity(0.3), radius: 10, x: 0, y: 5)
+                        Group {
+                            if isStartingRoom {
+                                ProgressView()
+                                    .tint(.white)
+                            } else {
+                                Text("Start")
+                                    .font(.UbuntuBold(size: 24))
+                                    .foregroundColor(.white)
+                            }
+                        }
+                        .frame(width: 220, height: 65)
+                        .background(Color(red: 0.15, green: 0.15, blue: 0.15))
+                        .cornerRadius(35)
+                        .shadow(color: .black.opacity(0.3), radius: 10, x: 0, y: 5)
                     }
+                    .disabled(isStartingRoom)
                     .padding(.bottom, 40)
                 }
                 .ignoresSafeArea()

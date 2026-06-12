@@ -9,6 +9,7 @@ struct PhotoPreviewView: View {
     let photo: UIImage
     var onDismiss: () -> Void
     var onSave: ((String, String) -> Void)? = nil
+    var isSaving: Bool = false
 
     @State private var thought = ""
     @State private var selectedEmoji: String? = nil
@@ -142,6 +143,7 @@ struct PhotoPreviewView: View {
 
                 // Confirm button (always visible)
                 Button(action: {
+                    guard !isSaving else { return }
                     if let onSave {
                         onSave(thought, selectedEmoji ?? "😊")
                     } else {
@@ -156,12 +158,20 @@ struct PhotoPreviewView: View {
                                 .fill(Color(red: 0.18, green: 0.18, blue: 0.18))
                                 .frame(width: 68, height: 68)
                                 .overlay(
-                                    Image(systemName: "checkmark")
-                                        .font(.system(size: 22, weight: .semibold))
-                                        .foregroundColor(.white)
+                                    Group {
+                                        if isSaving {
+                                            ProgressView()
+                                                .tint(.white)
+                                        } else {
+                                            Image(systemName: "checkmark")
+                                                .font(.system(size: 22, weight: .semibold))
+                                                .foregroundColor(.white)
+                                        }
+                                    }
                                 )
                         )
                 }
+                .disabled(isSaving)
                 .padding(.bottom, 84)
             }
         }

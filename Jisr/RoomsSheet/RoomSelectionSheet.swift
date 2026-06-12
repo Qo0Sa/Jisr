@@ -183,7 +183,7 @@ struct RoomSelectionSheet: View {
         let descriptor = FetchDescriptor<User>()
         if let currentUser = try? context.fetch(descriptor).first {
             newRoom.createdBy = currentUser
-            let hostParticipant = RoomParticipant(user: currentUser, room: newRoom)
+            let hostParticipant = RoomParticipant(user: currentUser, room: newRoom, isHost: true)
             context.insert(hostParticipant)
         }
         
