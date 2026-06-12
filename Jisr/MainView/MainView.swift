@@ -57,14 +57,14 @@ struct MainView: View {
             } else {
                 Text("Preparing room...")
             }
-        case .guest:
-            if let room = joinedRoom {
-                WaitingRoomForNotHostView(roomCode: room.code)
-            } else if let fallbackRoom = rooms.first {
-                WaitingRoomForNotHostView(roomCode: fallbackRoom.code)
-            } else {
-                Text("No active room joined.")
-            }
+            // ✅ الجديد
+            case .guest:
+                if let room = joinedRoom {
+                    WaitingRoomForNotHostView(roomCode: room.code)
+                } else {
+                    Text("No active room joined.")
+                }
+            
         case .profile:
             ProfileView(waitingDestination: $waitingDestination)
         case .hostGame:
@@ -157,9 +157,10 @@ struct MainView: View {
                 if isShowingJoinPopup {
                     JoinWithCodeSheet(
                         isPresented: $isShowingJoinPopup,
+                        // ✅ الجديد
                         onJoined: { room in
                             joinedRoom = room
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                                 waitingDestination = .guest
                             }
                         }
