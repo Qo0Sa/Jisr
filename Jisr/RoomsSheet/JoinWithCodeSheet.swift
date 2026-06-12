@@ -122,10 +122,13 @@ struct JoinWithCodeSheet: View {
         }
 
         try? context.save()
+        // ✅ الجديد
         await MainActor.run {
-            onJoined(room)
             isPresented = false
             isLoading = false
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            onJoined(room)
         }
     }
 }
