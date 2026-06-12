@@ -183,11 +183,9 @@ struct WaitingRoomView: View {
                                 missionDescription: missionDescription
                             )
                             await MainActor.run {
-                                isStartingRoom = false
-                                if didStart {
-                                    goToCamera = true
-                                }
-                            }
+                                        isStartingRoom = false
+                                        goToCamera = true
+                                    }
                         }
                         
                         goToCamera = true
