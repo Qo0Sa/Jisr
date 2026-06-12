@@ -121,28 +121,29 @@ struct WaitingRoomForNotHostView: View {
         }
         .navigationBarHidden(true)
         .onAppear {
-            // ✅ Listener للمشاركين
+            print("👂 بدأ listener للروم: \(roomCode)")
+            
             participantsListener = CloudKitManager.shared.listenToParticipants(roomCode: roomCode) { updated in
                 participants = updated
             }
 
-            // ✅ Listener للروم
             roomListener = CloudKitManager.shared.listenToRoom(roomCode: roomCode) { data in
+                print("📡 room data وصل: \(data)")
+                print("🎯 isStarted: \(data["isStarted"] ?? "nil")")
+                print("📝 missionTitle: \(data["missionTitle"] ?? "nil")")
+                
                 roomName     = data["name"]     as? String ?? ""
                 roomCategory = data["category"] as? String ?? ""
                 roomLocation = data["location"] as? String ?? ""
                 roomMaxPhotos = data["maxPhotos"] as? Int ?? 3
 
-                // ✅ المشن تتحدث دايماً
                 let title = data["missionTitle"] as? String ?? ""
                 let desc  = data["missionDescription"] as? String ?? ""
                 if !title.isEmpty { missionTitle = title }
                 if !desc.isEmpty  { missionDescription = desc }
 
-                // ✅ لو الهوست ضغط Start
                 if let isStarted = data["isStarted"] as? Bool, isStarted {
-
-                    // ابني الروم في الـ memory
+                    print("🚀 الهوست ضغط Start!")
                     if localRoom == nil {
                         let newRoom = Room(
                             name: roomName,
@@ -157,18 +158,15 @@ struct WaitingRoomForNotHostView: View {
                         context.insert(newRoom)
                         try? context.save()
                         localRoom = newRoom
-                    } else {
-                        localRoom?.missionTitle = missionTitle
-                        localRoom?.missionDescription = missionDescription
-                        localRoom?.isStarted = true
                     }
-
-                    DispatchQueue.main.asyncAfter(deadline: .now()) {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                        print("📲 goToCamera = true")
                         goToCamera = true
                     }
                 }
             }
         }
+        
         .onDisappear {
             participantsListener?.remove()
             roomListener?.remove()
