@@ -128,8 +128,11 @@ struct WaitingRoomForNotHostView: View {
         .navigationDestination(isPresented: $goToCamera) {
             if let room = room {
                 CameraView(room: room, isHost: false)
+            } else {
+                Text("Room not found: \(roomCode)") // ← شوفي لو يطلع هذا
             }
         }
+        
         .navigationDestination(isPresented: $goToMain) {
             MainView()
         }
@@ -148,15 +151,18 @@ struct WaitingRoomForNotHostView: View {
                 missionDescription = data["missionDescription"] as? String ?? ""
 
                 // لو الهوست ضغط Start
+                // ✅ الجديد
                 if let isStarted = data["isStarted"] as? Bool, isStarted {
-                    // حدّث الروم المحلي عشان CameraView يشتغل
                     if let room = rooms.first(where: { $0.code == roomCode }) {
                         room.missionTitle = missionTitle
                         room.missionDescription = missionDescription
                         room.isStarted = true
                         try? context.save()
                     }
-                    goToCamera = true
+                    // ✅ انتظر SwiftUI يحفظ القيم أولاً
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                        goToCamera = true
+                    }
                 }
             }
         }
