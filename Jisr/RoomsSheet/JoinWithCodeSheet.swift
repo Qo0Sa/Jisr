@@ -127,7 +127,7 @@ struct JoinWithCodeSheet: View {
             isPresented = false
             isLoading = false
         }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+        DispatchQueue.main.asyncAfter(deadline: .now()) {
             onJoined(room)
         }
     }

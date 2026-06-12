@@ -12,35 +12,26 @@ struct WaitingRoomForNotHostView: View {
     let roomCode: String
     @Environment(\.dismiss) private var dismiss
     @State private var goToCamera = false
-    @State private var goToMain = false
     @State private var participants: [[String: Any]] = []
     @State private var missionTitle: String = ""
     @State private var missionDescription: String = ""
     @State private var roomName: String = ""
     @State private var roomCategory: String = ""
+    @State private var roomLocation: String = ""
+    @State private var roomMaxPhotos: Int = 3
     @State private var participantsListener: ListenerRegistration? = nil
     @State private var roomListener: ListenerRegistration? = nil
 
-    @Query private var rooms: [Room]
-    @Environment(\.modelContext) private var context
+    // ✅ الروم يتبنى في الـ memory — ما نحتاج SwiftData
+    @State private var localRoom: Room? = nil
 
-    var room: Room? {
-        rooms.first(where: { $0.code == roomCode })
-    }
+    @Environment(\.modelContext) private var context
 
     var backgroundImageName: String {
         switch roomCategory {
         case "Cognitive": return "bluebg"
         case "Physical":  return "greenbg"
         default:          return "yellowbg"
-        }
-    }
-
-    var backgroundForBtn: String {
-        switch roomCategory {
-        case "Cognitive": return "backbtnblue"
-        case "Physical":  return "blackbtngreen"
-        default:          return "back bg"
         }
     }
 
@@ -57,9 +48,7 @@ struct WaitingRoomForNotHostView: View {
 
                     // HEADER
                     HStack {
-                        Button(action:{
-                            dismiss()
-                        }) {
+                        Button(action: { dismiss() }) {
                             Image(systemName: "chevron.left")
                                 .font(.system(size: 24, weight: .bold))
                                 .foregroundColor(.black)
@@ -72,16 +61,14 @@ struct WaitingRoomForNotHostView: View {
                     }
                     .offset(y: -30)
 
-                    // MISSION CARD
+                    // MISSION CARD — بدون زر التغيير للـ not host
                     VStack(alignment: .leading, spacing: 12) {
                         HStack(alignment: .top) {
                             Text(missionTitle)
                                 .font(.system(size: 20))
                                 .foregroundColor(.black.opacity(0.75))
                             Spacer()
-                            Image(systemName: "arrow.trianglehead.2.clockwise")
-                                .font(.system(size: 20))
-                                .foregroundColor(.black.opacity(0.75))
+                            // ✅ ما في زر تغيير للـ not host
                         }
                         Text(missionDescription)
                             .font(.system(size: 14))
@@ -126,41 +113,57 @@ struct WaitingRoomForNotHostView: View {
             }
         }
         .navigationDestination(isPresented: $goToCamera) {
-            if let room = room {
+            if let room = localRoom {
                 CameraView(room: room, isHost: false)
             } else {
-                Text("Room not found: \(roomCode)") // ← شوفي لو يطلع هذا
+                Text("جاري التحميل...")
             }
-        }
-        
-        .navigationDestination(isPresented: $goToMain) {
-            MainView()
         }
         .navigationBarHidden(true)
         .onAppear {
-            // ✅ Listener للمشاركين — يتحدث فوري
+            // ✅ Listener للمشاركين
             participantsListener = CloudKitManager.shared.listenToParticipants(roomCode: roomCode) { updated in
                 participants = updated
             }
 
-            // ✅ Listener للروم — يجيب المهمة والاسم والـ isStarted
+            // ✅ Listener للروم
             roomListener = CloudKitManager.shared.listenToRoom(roomCode: roomCode) { data in
-                roomName = data["name"] as? String ?? ""
+                roomName     = data["name"]     as? String ?? ""
                 roomCategory = data["category"] as? String ?? ""
-                missionTitle = data["missionTitle"] as? String ?? ""
-                missionDescription = data["missionDescription"] as? String ?? ""
+                roomLocation = data["location"] as? String ?? ""
+                roomMaxPhotos = data["maxPhotos"] as? Int ?? 3
 
-                // لو الهوست ضغط Start
-                // ✅ الجديد
+                // ✅ المشن تتحدث دايماً
+                let title = data["missionTitle"] as? String ?? ""
+                let desc  = data["missionDescription"] as? String ?? ""
+                if !title.isEmpty { missionTitle = title }
+                if !desc.isEmpty  { missionDescription = desc }
+
+                // ✅ لو الهوست ضغط Start
                 if let isStarted = data["isStarted"] as? Bool, isStarted {
-                    if let room = rooms.first(where: { $0.code == roomCode }) {
-                        room.missionTitle = missionTitle
-                        room.missionDescription = missionDescription
-                        room.isStarted = true
+
+                    // ابني الروم في الـ memory
+                    if localRoom == nil {
+                        let newRoom = Room(
+                            name: roomName,
+                            code: roomCode,
+                            category: roomCategory,
+                            location: roomLocation,
+                            maxPhotos: roomMaxPhotos
+                        )
+                        newRoom.missionTitle = missionTitle
+                        newRoom.missionDescription = missionDescription
+                        newRoom.isStarted = true
+                        context.insert(newRoom)
                         try? context.save()
+                        localRoom = newRoom
+                    } else {
+                        localRoom?.missionTitle = missionTitle
+                        localRoom?.missionDescription = missionDescription
+                        localRoom?.isStarted = true
                     }
-                    // ✅ انتظر SwiftUI يحفظ القيم أولاً
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+
+                    DispatchQueue.main.asyncAfter(deadline: .now()) {
                         goToCamera = true
                     }
                 }

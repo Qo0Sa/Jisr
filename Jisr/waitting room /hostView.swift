@@ -197,7 +197,9 @@ struct WaitingRoomView: View {
             goToCamera = false
         }
         .onAppear {
-            generateMission()
+            if missionTitle.isEmpty {
+                   generateMission()
+               }
             // ✅ Realtime listener بدل Timer
             participantsListener = CloudKitManager.shared.listenToParticipants(roomCode: room.code) { updated in
                 participants = updated
