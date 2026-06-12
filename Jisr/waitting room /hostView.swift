@@ -171,9 +171,16 @@ struct WaitingRoomView: View {
                         room.missionTitle = missionTitle
                         room.missionDescription = missionDescription
                         try? context.save()
+                        // ✅ الجديد
                         Task {
-                            await CloudKitManager.shared.updateRoom(roomCode: room.code, isStarted: true)
+                            await CloudKitManager.shared.updateRoom(
+                                roomCode: room.code,
+                                isStarted: true,
+                                missionTitle: missionTitle,
+                                missionDescription: missionDescription
+                            )
                         }
+                        
                         goToCamera = true
                     }) {
                         Text("Start")
