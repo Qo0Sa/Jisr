@@ -12,6 +12,7 @@ struct RoomHeader: View {
     let maxPhotos: Int
     let isShowingFeed: Bool
     var participants: [[String: Any]] = []   // ✅ من Firestore
+    let photos: [[String: Any]]
     var onGalleryToggle: (() -> Void)? = nil
     var onBack: (() -> Void)? = nil
 
@@ -83,13 +84,13 @@ struct RoomHeader: View {
                                     .overlay(Circle().stroke(Color.white, lineWidth: 1.5))
                                     .overlay(
                                         Group {
-                                            if let base64 = participant["profileImageBase64"] as? String,
-                                               let data = Data(base64Encoded: base64),
+                                            if let data = participant["profileImageData"] as? Data,
                                                let uiImage = UIImage(data: data) {
                                                 Image(uiImage: uiImage)
                                                     .resizable()
                                                     .scaledToFill()
                                                     .clipShape(Circle())
+                                        
                                             } else {
                                                 let name = participant["userName"] as? String ?? "?"
                                                 Text(String(name.prefix(1)).uppercased())
@@ -123,8 +124,7 @@ struct RoomHeader: View {
                                     .overlay(Circle().stroke(Color.white, lineWidth: 1.5))
                                     .overlay(
                                         Group {
-                                            if let base64 = participant["profileImageBase64"] as? String,
-                                               let data = Data(base64Encoded: base64),
+                                            if let data = participant["profileImageData"] as? Data,
                                                let uiImage = UIImage(data: data) {
                                                 Image(uiImage: uiImage)
                                                     .resizable()
@@ -162,11 +162,11 @@ struct EmptyButtonStyle: ButtonStyle {
     }
 }
 
-#Preview {
-    let config = ModelConfiguration(isStoredInMemoryOnly: true)
-    let container = try! ModelContainer(for: Room.self, User.self, Photo.self, configurations: config)
-    let sampleRoom = Room(name: "Test Room", code: "JSR-123", category: "Creative", location: "Outdoor", maxPhotos: 9)
-    return RoomHeader(room: sampleRoom, currentProgress: 6, maxPhotos: 9, isShowingFeed: false, onGalleryToggle: {})
-        .modelContainer(container)
-        .background(Color.gray)
-}
+//#Preview {
+//    let config = ModelConfiguration(isStoredInMemoryOnly: true)
+//    let container = try! ModelContainer(for: Room.self, User.self, Photo.self, configurations: config)
+//    let sampleRoom = Room(name: "Test Room", code: "JSR-123", category: "Creative", location: "Outdoor", maxPhotos: 9)
+//    RoomHeader(room: sampleRoom, currentProgress: 6, maxPhotos: 9, isShowingFeed: false, onGalleryToggle: {})
+//        .modelContainer(container)
+//        .background(Color.gray)
+//}

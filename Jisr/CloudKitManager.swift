@@ -181,13 +181,6 @@ class CloudKitManager {
 
         let userID = await authenticatedUserID()
 
-        var profileURL: String? = nil
-
-        // 🔥 رفع الصورة لو موجودة
-        if let imageData = profileImage {
-            profileURL = await uploadProfileImage(imageData)
-        }
-
         var data: [String: Any] = [
             "roomCode": roomCode,
             "userID": userID,
@@ -197,16 +190,18 @@ class CloudKitManager {
             "joinedAt": Timestamp()
         ]
 
-        // ✅ أهم سطر (الرابط)
-        if let profileURL {
-            data["profileImageURL"] = profileURL
+        // ضغط الصورة قبل حفظها
+        if let imageData = profileImage,
+           let uiImage = UIImage(data: imageData),
+           let compressedData = uiImage.jpegData(compressionQuality: 0.2) {
+
+            print("📸 Original Size = \(imageData.count)")
+            print("📸 Compressed Size = \(compressedData.count)")
+
+            data["profileImageData"] = compressedData
         }
 
-        print("═══════════════════════")
-      
-
         do {
-
             let docID = "\(roomCode)_\(userID)"
 
             try await db.collection("participants")
@@ -214,15 +209,15 @@ class CloudKitManager {
                 .setData(data)
 
             print("✅ SAVED SUCCESSFULLY")
-            print("📄 documentID = \(docID)")
 
         } catch {
             print("❌ SAVE FAILED")
             print(error.localizedDescription)
         }
-
-        print("═══════════════════════")
     }
+    
+    
+    
     func fetchParticipants(roomCode: String) async -> [[String: Any]] {
         do {
             let snapshot = try await db.collection("participants")
@@ -246,13 +241,13 @@ class CloudKitManager {
             "roomCode": roomCode,
             "userID": userID,
             "userName": userName,
-            "imageBase64": imageData.base64EncodedString(),
+            "imageData": imageData,
             "thought": thought,
             "emoji": emoji,
             "uploadedAt": Timestamp()
         ]
         if let profileImage {
-            data["profileImageBase64"] = profileImage.base64EncodedString()
+            data["profileImageData"] = profileImage.base64EncodedString()
         }
         do {
             try await db.collection("photos").addDocument(data: data)
@@ -306,7 +301,7 @@ class CloudKitManager {
     }
 
     func uploadProfileImage(_ imageData: Data) async -> String? {
-
+        print(Storage.storage().reference().bucket)
         let userID = await authenticatedUserID()
 
         let ref = Storage.storage()
@@ -319,11 +314,15 @@ class CloudKitManager {
             let url = try await ref.downloadURL()
 
             return url.absoluteString
+            
 
         } catch {
             print("❌ Upload image error: \(error)")
             return nil
         }
+        
+        
+        
     }    // للتوافق مع الكود القديم
     func subscribeToRoom(roomCode: String) {}
     func subscribeToParticipants(roomCode: String) {}

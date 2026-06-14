@@ -8,7 +8,7 @@ import SwiftData
 import FirebaseFirestore
 
 struct WaitingRoomForNotHostView: View {
-
+    
     let roomCode: String
     @Environment(\.dismiss) private var dismiss
     @State private var goToCamera = false
@@ -21,12 +21,12 @@ struct WaitingRoomForNotHostView: View {
     @State private var roomMaxPhotos: Int = 3
     @State private var participantsListener: ListenerRegistration? = nil
     @State private var roomListener: ListenerRegistration? = nil
-
+    
     // ✅ الروم يتبنى في الـ memory — ما نحتاج SwiftData
     @State private var localRoom: Room? = nil
-
+    
     @Environment(\.modelContext) private var context
-
+    
     var backgroundImageName: String {
         switch roomCategory {
         case "Cognitive": return "bluebg"
@@ -34,18 +34,18 @@ struct WaitingRoomForNotHostView: View {
         default:          return "yellowbg"
         }
     }
-
+    
     var body: some View {
         ZStack(alignment: .bottom) {
-
+            
             Image(backgroundImageName)
                 .resizable()
                 .scaledToFill()
                 .ignoresSafeArea()
-
+            
             VStack {
                 VStack {
-
+                    
                     // HEADER
                     HStack {
                         Button(action: { dismiss() }) {
@@ -60,7 +60,7 @@ struct WaitingRoomForNotHostView: View {
                         Color.clear.frame(width: 24)
                     }
                     .offset(y: -30)
-
+                    
                     // MISSION CARD — بدون زر التغيير للـ not host
                     VStack(alignment: .leading, spacing: 12) {
                         HStack(alignment: .top) {
@@ -85,7 +85,7 @@ struct WaitingRoomForNotHostView: View {
                     .shadow(color: .black.opacity(0.4), radius: 0, x: 0, y: 3)
                     .padding(.horizontal, -10)
                     .offset(y: -120)
-
+                    
                     // PARTICIPANTS COUNT
                     HStack {
                         Label("\(participants.count)", systemImage: "person.fill")
@@ -93,14 +93,14 @@ struct WaitingRoomForNotHostView: View {
                     .offset(y: -100)
                 }
                 .padding(.horizontal, 25)
-
+                
                 // LIST
                 ScrollView(showsIndicators: false) {
                     VStack(spacing: 15) {
                         ForEach(Array(participants.enumerated()), id: \.offset) { _, participant in
                             UserCard(
                                 name: participant["userName"] as? String ?? "Unknown",
-                                profileImageURL: participant["profileImageURL"] as? String
+                                profileImageData: participant["profileImageData"] as? Data
                             )
                         }
                         Color.clear.frame(height: 30)
@@ -126,14 +126,14 @@ struct WaitingRoomForNotHostView: View {
                let existingRoom = savedRooms.first(where: { $0.code == roomCode }) {
                 localRoom = existingRoom
             }
-
+            
             // ✅ Listener للمشاركين
             participantsListener = CloudKitManager.shared.listenToParticipants(roomCode: roomCode) { updated in
                 print("🎯 HOST UI UPDATED")
                 print("🎯 participants count = \(updated.count)")
                 participants = updated
             }
-
+            
             roomListener = CloudKitManager.shared.listenToRoom(roomCode: roomCode) { data in
                 print("📡 room data وصل: \(data)")
                 print("🎯 isStarted: \(data["isStarted"] ?? "nil")")
@@ -143,15 +143,15 @@ struct WaitingRoomForNotHostView: View {
                 roomCategory = data["category"] as? String ?? ""
                 roomLocation = data["location"] as? String ?? ""
                 roomMaxPhotos = data["maxPhotos"] as? Int ?? 3
-
+                
                 let title = data["missionTitle"] as? String ?? ""
                 let desc  = data["missionDescription"] as? String ?? ""
                 if !title.isEmpty { missionTitle = title }
                 if !desc.isEmpty  { missionDescription = desc }
-
+                
                 // ✅ لو الهوست ضغط Start
                 if let isStarted = data["isStarted"] as? Bool, isStarted {
-
+                    
                     if let existingRoom = localRoom {
                         existingRoom.name = roomName
                         existingRoom.category = roomCategory
@@ -176,7 +176,7 @@ struct WaitingRoomForNotHostView: View {
                         localRoom = newRoom
                     }
                     try? context.save()
-
+                    
                     DispatchQueue.main.asyncAfter(deadline: .now()) {
                         goToCamera = true
                     }
@@ -189,81 +189,71 @@ struct WaitingRoomForNotHostView: View {
             roomListener?.remove()
         }
     }
-
-//    struct UserCard: View {
-//        let name: String
-//        let profileImageBase64: String?
-//
-//        var uiImage: UIImage? {
-//            guard let base64 = profileImageBase64,
-//                  let data = Data(base64Encoded: base64) else { return nil }
-//            return UIImage(data: data)
-//        }
-//
-//        var body: some View {
-//            HStack(spacing: 15) {
-//                if let img = uiImage {
-//                    Image(uiImage: img)
-//                        .resizable()
-//                        .scaledToFill()
-//                        .frame(width: 50, height: 50)
-//                        .clipShape(Circle())
-//                        .offset(x: -10)
-//                } else {
-//                    Circle()
-//                        .fill(Color.black.opacity(0.08))
-//                        .frame(width: 50, height: 50)
-//                        .overlay {
-//                            Text(String(name.prefix(1)).uppercased())
-//                                .font(.system(size: 20, weight: .bold))
-//                                .foregroundColor(.black.opacity(0.6))
-//                        }
-//                }
-//                Spacer()
-//                Text(name)
-//                    .font(.UbuntuBold(size: 18))
-//                    .foregroundColor(.black.opacity(0.8))
-//                    .padding(.trailing, 60)
-//            }
-//            .padding(.horizontal, 18)
-//            .padding(.vertical, 6)
-//            .background(Color.white.opacity(0.6))
-//            .cornerRadius(45)
-//            .fixedSize()
-//        }
-//    }
+    
+    //    struct UserCard: View {
+    //        let name: String
+    //        let profileImageBase64: String?
+    //
+    //        var uiImage: UIImage? {
+    //            guard let base64 = profileImageBase64,
+    //                  let data = Data(base64Encoded: base64) else { return nil }
+    //            return UIImage(data: data)
+    //        }
+    //
+    //        var body: some View {
+    //            HStack(spacing: 15) {
+    //                if let img = uiImage {
+    //                    Image(uiImage: img)
+    //                        .resizable()
+    //                        .scaledToFill()
+    //                        .frame(width: 50, height: 50)
+    //                        .clipShape(Circle())
+    //                        .offset(x: -10)
+    //                } else {
+    //                    Circle()
+    //                        .fill(Color.black.opacity(0.08))
+    //                        .frame(width: 50, height: 50)
+    //                        .overlay {
+    //                            Text(String(name.prefix(1)).uppercased())
+    //                                .font(.system(size: 20, weight: .bold))
+    //                                .foregroundColor(.black.opacity(0.6))
+    //                        }
+    //                }
+    //                Spacer()
+    //                Text(name)
+    //                    .font(.UbuntuBold(size: 18))
+    //                    .foregroundColor(.black.opacity(0.8))
+    //                    .padding(.trailing, 60)
+    //            }
+    //            .padding(.horizontal, 18)
+    //            .padding(.vertical, 6)
+    //            .background(Color.white.opacity(0.6))
+    //            .cornerRadius(45)
+    //            .fixedSize()
+    //        }
+    //    }
     struct UserCard: View {
         let name: String
-        let profileImageURL: String?
+        let profileImageData: Data?
+
+        var uiImage: UIImage? {
+            guard let data = profileImageData else { return nil }
+            return UIImage(data: data)
+        }
 
         var body: some View {
             HStack(spacing: 15) {
 
-                if let urlString = profileImageURL,
-                   let url = URL(string: urlString) {
-
-                    AsyncImage(url: url) { phase in
-                        switch phase {
-                        case .success(let image):
-                            image
-                                .resizable()
-                                .scaledToFill()
-
-                        case .failure(_):
-                            fallback
-
-                        case .empty:
-                            ProgressView()
-
-                        @unknown default:
-                            fallback
-                        }
-                    }
-                    .frame(width: 50, height: 50)
-                    .clipShape(Circle())
-
+                if let image = uiImage {
+                    Image(uiImage: image)
+                        .resizable()
+                        .scaledToFill()
+                        .frame(width: 50, height: 50)
+                        .clipShape(Circle())
+                        .offset(x: -10) // نفس التأثير من الكود الأول
                 } else {
                     fallback
+                        .offset(x: -10) // مهم عشان نفس الشكل
                 }
 
                 Spacer()

@@ -14,6 +14,7 @@ struct RoomFeed: View {
     let isHost: Bool
     @Binding var isShowingFeed: Bool
     let photos: [[String: Any]]   // ✅ يجي من CameraView
+    let participants: [[String: Any]]
 
     @State private var isShowingEndPopup = false
     @State private var isRoomFinished = false
@@ -32,6 +33,8 @@ struct RoomFeed: View {
                     currentProgress: photos.count,
                     maxPhotos: room.maxPhotos,
                     isShowingFeed: isShowingFeed,
+                    participants: participants,
+                    photos: photos,
                     onGalleryToggle: nil,
                     onBack: {
                         withAnimation(.easeInOut(duration: 0.25)) {
@@ -56,15 +59,13 @@ struct RoomFeed: View {
                     } else {
                         LazyVGrid(columns: columns, spacing: 16) {
                             ForEach(Array(photos.enumerated()), id: \.offset) { _, photo in
+
                                 let thought = photo["thought"] as? String ?? ""
-                                let imageData: Data? = {
-                                    guard let base64 = photo["imageBase64"] as? String else { return nil }
-                                    return Data(base64Encoded: base64)
-                                }()
-                                let profileData: Data? = {
-                                    guard let base64 = photo["profileImageBase64"] as? String else { return nil }
-                                    return Data(base64Encoded: base64)
-                                }()
+
+                                let imageData = photo["imageData"] as? Data
+
+                                let profileData = photo["profileImageData"] as? Data
+
                                 FeedCard(
                                     userName: photo["userName"] as? String ?? "Member",
                                     userImageData: profileData,
@@ -138,11 +139,11 @@ struct RoomFeed: View {
     }
 }
 
-#Preview {
-    let config = ModelConfiguration(isStoredInMemoryOnly: true)
-    let container = try! ModelContainer(for: Room.self, User.self, Photo.self, configurations: config)
-    let sampleRoom = Room(name: "Mission District Mural Hunt", code: "JSR-659", category: "Creative", location: "Outdoor", maxPhotos: 9)
-    container.mainContext.insert(sampleRoom)
-    return RoomFeed(room: sampleRoom, isHost: true, isShowingFeed: .constant(true), photos: [])
-        .modelContainer(container)
-}
+//#Preview {
+//    let config = ModelConfiguration(isStoredInMemoryOnly: true)
+//    let container = try! ModelContainer(for: Room.self, User.self, Photo.self, configurations: config)
+//    let sampleRoom = Room(name: "Mission District Mural Hunt", code: "JSR-659", category: "Creative", location: "Outdoor", maxPhotos: 9)
+//    container.mainContext.insert(sampleRoom)
+//    RoomFeed(room: sampleRoom, isHost: true, isShowingFeed: .constant(true), photos: [])
+//        .modelContainer(container)
+//}

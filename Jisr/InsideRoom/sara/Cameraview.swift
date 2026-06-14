@@ -172,7 +172,13 @@ struct CameraView: View {
     var body: some View {
         Group {
             if isShowingFeed {
-                RoomFeed(room: room, isHost: isHost, isShowingFeed: $isShowingFeed, photos: photos)
+                RoomFeed(
+                    room: room,
+                    isHost: isHost,
+                    isShowingFeed: $isShowingFeed,
+                    photos: photos,
+                    participants: participants
+                )
             } else if let capturedPhoto = camera.capturedPhoto {
                 PhotoPreviewView(
                     photo: capturedPhoto,
@@ -346,6 +352,7 @@ struct CameraView: View {
                         }.count,                        maxPhotos: room.maxPhotos,
                         isShowingFeed: isShowingFeed,
                         participants: participants,
+                        photos: photos,
                         onGalleryToggle: {
                             withAnimation(.easeInOut(duration: 0.25)) { isShowingFeed = true }
                         },

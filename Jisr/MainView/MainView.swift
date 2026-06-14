@@ -534,7 +534,7 @@ struct RoomHostAvatar: View {
                     }
 
                     guard let data = snapshot?.documents.first?.data() else { return }
-                    if let base64 = data["profileImageBase64"] as? String {
+                    if let base64 = data["profileImageData"] as? String {
                         hostImageData = Data(base64Encoded: base64)
                     }
                     if let name = data["userName"] as? String {
