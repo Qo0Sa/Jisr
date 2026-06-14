@@ -63,28 +63,33 @@ struct WaitingRoomForNotHostView: View {
                     
                     // MISSION CARD — بدون زر التغيير للـ not host
                     VStack(alignment: .leading, spacing: 12) {
+
                         HStack(alignment: .top) {
                             Text(missionTitle)
                                 .font(.system(size: 20))
                                 .foregroundColor(.black.opacity(0.75))
-                            Spacer()
-                            // ✅ ما في زر تغيير للـ not host
+
+
                         }
+
                         Text(missionDescription)
                             .font(.system(size: 14))
                             .foregroundColor(.black.opacity(0.7))
                             .padding(16)
                             .frame(maxWidth: .infinity, alignment: .leading)
-                            .background(Color(red: 248/255, green: 242/255, blue: 230/255))
+                            .background(Color(red: 248/255, green: 242/255, blue: 230/255)) // F8F2E6
                             .cornerRadius(18)
                     }
                     .padding(16)
-                    .background(Color(red: 244/255, green: 242/255, blue: 237/255))
+                    .background(Color(red: 252/255, green: 250/255, blue: 245/255)) // FCFAF5
                     .cornerRadius(24)
-                    .overlay(RoundedRectangle(cornerRadius: 24).stroke(Color.black.opacity(0.7), lineWidth: 1))
-                    .shadow(color: .black.opacity(0.4), radius: 0, x: 0, y: 3)
+//                    .overlay(
+//                        RoundedRectangle(cornerRadius: 24)
+//                            .stroke(Color.black.opacity(0.2), lineWidth: 1)
+//                    )
+                    .shadow(color: Color.black.opacity(0.9), radius: 0, x: 0, y: 6) // نفس ستايل الكود
                     .padding(.horizontal, -10)
-                    .offset(y: -120)
+                    .offset(y: -110)
                     
                     // PARTICIPANTS COUNT
                     HStack {
