@@ -91,6 +91,10 @@ struct WaitingRoomForNotHostView: View {
                     .padding(.horizontal, -10)
                     .offset(y: -110)
                     
+                    
+                    
+                    
+                    
                     // PARTICIPANTS COUNT
                     HStack {
                         Label("\(participants.count)", systemImage: "person.fill")

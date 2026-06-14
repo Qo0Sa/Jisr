@@ -105,6 +105,9 @@ struct WaitingRoomView: View {
                     .padding(.horizontal, -10)
                     .offset(y: -110)
                     
+                    
+                    
+                    
                     HStack {
                         Label("\(participants.count)", systemImage: "person.fill")
                         
