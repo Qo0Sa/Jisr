@@ -100,7 +100,7 @@ struct WaitingRoomForNotHostView: View {
                         ForEach(Array(participants.enumerated()), id: \.offset) { _, participant in
                             UserCard(
                                 name: participant["userName"] as? String ?? "Unknown",
-                                profileImageBase64: participant["profileImageBase64"] as? String
+                                profileImageURL: participant["profileImageURL"] as? String
                             )
                         }
                         Color.clear.frame(height: 30)
@@ -129,6 +129,8 @@ struct WaitingRoomForNotHostView: View {
 
             // ✅ Listener للمشاركين
             participantsListener = CloudKitManager.shared.listenToParticipants(roomCode: roomCode) { updated in
+                print("🎯 HOST UI UPDATED")
+                print("🎯 participants count = \(updated.count)")
                 participants = updated
             }
 
@@ -188,36 +190,84 @@ struct WaitingRoomForNotHostView: View {
         }
     }
 
+//    struct UserCard: View {
+//        let name: String
+//        let profileImageBase64: String?
+//
+//        var uiImage: UIImage? {
+//            guard let base64 = profileImageBase64,
+//                  let data = Data(base64Encoded: base64) else { return nil }
+//            return UIImage(data: data)
+//        }
+//
+//        var body: some View {
+//            HStack(spacing: 15) {
+//                if let img = uiImage {
+//                    Image(uiImage: img)
+//                        .resizable()
+//                        .scaledToFill()
+//                        .frame(width: 50, height: 50)
+//                        .clipShape(Circle())
+//                        .offset(x: -10)
+//                } else {
+//                    Circle()
+//                        .fill(Color.black.opacity(0.08))
+//                        .frame(width: 50, height: 50)
+//                        .overlay {
+//                            Text(String(name.prefix(1)).uppercased())
+//                                .font(.system(size: 20, weight: .bold))
+//                                .foregroundColor(.black.opacity(0.6))
+//                        }
+//                }
+//                Spacer()
+//                Text(name)
+//                    .font(.UbuntuBold(size: 18))
+//                    .foregroundColor(.black.opacity(0.8))
+//                    .padding(.trailing, 60)
+//            }
+//            .padding(.horizontal, 18)
+//            .padding(.vertical, 6)
+//            .background(Color.white.opacity(0.6))
+//            .cornerRadius(45)
+//            .fixedSize()
+//        }
+//    }
     struct UserCard: View {
         let name: String
-        let profileImageBase64: String?
-
-        var uiImage: UIImage? {
-            guard let base64 = profileImageBase64,
-                  let data = Data(base64Encoded: base64) else { return nil }
-            return UIImage(data: data)
-        }
+        let profileImageURL: String?
 
         var body: some View {
             HStack(spacing: 15) {
-                if let img = uiImage {
-                    Image(uiImage: img)
-                        .resizable()
-                        .scaledToFill()
-                        .frame(width: 50, height: 50)
-                        .clipShape(Circle())
-                        .offset(x: -10)
-                } else {
-                    Circle()
-                        .fill(Color.black.opacity(0.08))
-                        .frame(width: 50, height: 50)
-                        .overlay {
-                            Text(String(name.prefix(1)).uppercased())
-                                .font(.system(size: 20, weight: .bold))
-                                .foregroundColor(.black.opacity(0.6))
+
+                if let urlString = profileImageURL,
+                   let url = URL(string: urlString) {
+
+                    AsyncImage(url: url) { phase in
+                        switch phase {
+                        case .success(let image):
+                            image
+                                .resizable()
+                                .scaledToFill()
+
+                        case .failure(_):
+                            fallback
+
+                        case .empty:
+                            ProgressView()
+
+                        @unknown default:
+                            fallback
                         }
+                    }
+                    .frame(width: 50, height: 50)
+                    .clipShape(Circle())
+
+                } else {
+                    fallback
                 }
+
                 Spacer()
+
                 Text(name)
                     .font(.UbuntuBold(size: 18))
                     .foregroundColor(.black.opacity(0.8))
@@ -228,6 +278,17 @@ struct WaitingRoomForNotHostView: View {
             .background(Color.white.opacity(0.6))
             .cornerRadius(45)
             .fixedSize()
+        }
+
+        var fallback: some View {
+            Circle()
+                .fill(Color.black.opacity(0.08))
+                .frame(width: 50, height: 50)
+                .overlay {
+                    Text(String(name.prefix(1)).uppercased())
+                        .font(.system(size: 20, weight: .bold))
+                        .foregroundColor(.black.opacity(0.6))
+                }
         }
     }
 }
