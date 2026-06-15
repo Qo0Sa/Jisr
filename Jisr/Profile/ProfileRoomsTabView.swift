@@ -59,7 +59,7 @@ struct ProfileRoomsTabView: View {
                                 id: \.element.persistentModelID) { index, room in
                             
                             RoomCardView(room: room)
-                                .zIndex(Double(filteredRooms.count - index))
+                                .zIndex(Double(index))
                         }
                     }
                     .padding(.horizontal, 24)
