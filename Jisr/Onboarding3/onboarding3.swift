@@ -41,9 +41,9 @@ struct Onboarding3View: View {
                         Image("on3")
                             .resizable()
                             .scaledToFit()
-                            .frame(width: 400, height: 400)
+                            .frame(width: 380, height: 370)
                             .scaleEffect(1.26)
-                            .offset(y: 55)
+                            .offset(y: 90)
 
                     }
 

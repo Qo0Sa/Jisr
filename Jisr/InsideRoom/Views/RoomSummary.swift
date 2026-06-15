@@ -77,12 +77,16 @@ struct RoomSummary: View {
                         Image(systemName: "square.and.arrow.down").font(.system(size: 18, weight: .bold))
                     }
                 }
+                .frame(width: 220, height: 65)
+                .background(Color(red: 0.15, green: 0.15, blue: 0.15))
+                .cornerRadius(35)
+                .shadow(color: .black.opacity(0.3), radius: 10, x: 0, y: 5)
                 .foregroundColor(.white)
-                .frame(maxWidth: .infinity)
-                .frame(height: 58)
+//                .frame(maxWidth: .infinity)
+//                .frame(height: 58)
                 .background(
                     saveSucceeded
-                        ? Color.green.opacity(0.75)
+                        ? Color.phicon.opacity(0.75)
                         : Color(red: 0.18, green: 0.18, blue: 0.18)
                 )
                 .clipShape(RoundedRectangle(cornerRadius: 99))
