@@ -16,7 +16,7 @@ import SwiftUI
 
 struct FeedCard: View {
     let userName: String
-    let userImageData: Data?
+    let userImage: UIImage?
     let thoughtText: String
     let emojiReaction: String
     let imageData: Data?
@@ -63,7 +63,7 @@ struct FeedCard: View {
                             .fill(Color.black.opacity(0.15))
                             .frame(width: 24, height: 24)
                             .overlay {
-                                if let data = userImageData, let uiImage = UIImage(data: data) {
+                                if let uiImage = userImage {
                                     Image(uiImage: uiImage)
                                         .resizable()
                                         .scaledToFill()
@@ -141,7 +141,7 @@ struct FeedCard: View {
         Color("Backgroundcolor").ignoresSafeArea()
         FeedCard(
             userName: "Sara",
-            userImageData: nil,
+            userImage: nil,
             thoughtText: "text",
             emojiReaction: "😆",
             imageData: nil
