@@ -67,7 +67,7 @@ struct Onboarding2View: View {
                         Image("onboCard")
                             .resizable()
                             .scaledToFit()
-                            .offset(y: 60)
+                            .offset(y: 65)
                         
                         VStack(alignment: .leading, spacing: 25) {
                             

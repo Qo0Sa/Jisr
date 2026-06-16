@@ -72,7 +72,7 @@ struct OnboardingView: View {
                                 .resizable()
                                 .scaledToFit()
                                 //.padding(.bottom, -30)
-                                .offset(y: 30)
+                                .offset(y: 35)
                             VStack(alignment: .leading, spacing: 25) {
                                 
                                 Text("New city, new people, now what?")
