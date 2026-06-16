@@ -7,32 +7,32 @@
       <BreakpointProxy
          BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
          <BreakpointContent
-            uuid = "B5DC7B6A-EB64-4765-BD28-F59E73016255"
+            uuid = "52466E09-54CC-46BB-B673-BEDF1C7521C7"
             shouldBeEnabled = "No"
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "Jisr/InsideRoom/Views/RoomFeed.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "32"
-            endingLineNumber = "32"
-            landmarkName = "body"
+            startingLineNumber = "26"
+            endingLineNumber = "26"
+            landmarkName = "columns"
             landmarkType = "24">
          </BreakpointContent>
       </BreakpointProxy>
       <BreakpointProxy
          BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
          <BreakpointContent
-            uuid = "64140086-DFB3-4F44-B2F7-9C70534D9D3A"
-            shouldBeEnabled = "Yes"
+            uuid = "2F17BC28-7259-4D83-B819-CD09C48A7B81"
+            shouldBeEnabled = "No"
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "Jisr/InsideRoom/Views/RoomFeed.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "33"
-            endingLineNumber = "33"
-            landmarkName = "body"
+            startingLineNumber = "27"
+            endingLineNumber = "27"
+            landmarkName = "totalRequiredPhotos"
             landmarkType = "24">
          </BreakpointContent>
       </BreakpointProxy>

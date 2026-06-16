@@ -24,14 +24,16 @@ struct RoomFeed: View {
         GridItem(.flexible(), spacing: 14),
         GridItem(.flexible(), spacing: 14)
     ]
-
+    private var totalRequiredPhotos: Int {
+        participants.count * room.maxPhotos
+    }
     var body: some View {
         ZStack {
             VStack(spacing: 0) {
                 RoomHeader(
                     room: room,
                     currentProgress: photos.count,
-                    maxPhotos: room.maxPhotos,
+                    maxPhotos: totalRequiredPhotos,
                     isShowingFeed: isShowingFeed,
                     participants: participants,
                     photos: photos,
@@ -64,11 +66,12 @@ struct RoomFeed: View {
 
                                 let imageData = photo["imageData"] as? Data
 
-                                let profileData = photo["profileImageData"] as? Data
+//                                let profileData = photo["profileImageData"] as? Data
+                                let profileImage = decodeProfileImage(photo["profileImageData"])
 
                                 FeedCard(
                                     userName: photo["userName"] as? String ?? "Member",
-                                    userImageData: profileData,
+                                    userImage: profileImage,
                                     thoughtText: thought.isEmpty ? "Capturing the moment!" : thought,
                                     emojiReaction: photo["emoji"] as? String ?? "😊",
                                     imageData: imageData
@@ -136,6 +139,18 @@ struct RoomFeed: View {
         .navigationDestination(isPresented: $isRoomFinished) {
             RoomSummary(room: room)
         }
+    }
+    func decodeProfileImage(_ value: Any?) -> UIImage? {
+        if let data = value as? Data {
+            return UIImage(data: data)
+        }
+
+        if let base64 = value as? String,
+           let data = Data(base64Encoded: base64) {
+            return UIImage(data: data)
+        }
+
+        return nil
     }
 }
 

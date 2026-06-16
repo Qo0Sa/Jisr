@@ -60,6 +60,7 @@ struct JoinWithCodeSheet: View {
                 }) {
                     if isLoading {
                         ProgressView()
+                            .tint(.white)
                             .frame(width: 170, height: 58)
                             .background(Color("buttonColor"))
                             .clipShape(RoundedRectangle(cornerRadius: 99))
