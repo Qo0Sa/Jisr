@@ -328,7 +328,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Jisr/Info.plist;
-				INFOPLIST_KEY_NSCameraUsageDescription = "Need camera access to take photos";
+				INFOPLIST_KEY_NSCameraUsageDescription = "Jisr uses the camera to let you capture photos for missions and upload them directly to your shared room so other participants can view them.";
 				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "Jisr saves your room photos to your Camera Roll so you can keep them.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -369,7 +369,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Jisr/Info.plist;
-				INFOPLIST_KEY_NSCameraUsageDescription = "Need camera access to take photos";
+				INFOPLIST_KEY_NSCameraUsageDescription = "Jisr uses the camera to let you capture photos for missions and upload them directly to your shared room so other participants can view them.";
 				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "Jisr saves your room photos to your Camera Roll so you can keep them.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
